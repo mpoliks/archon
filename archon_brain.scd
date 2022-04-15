@@ -1,8 +1,9 @@
 (
 
 ~detect = false;
-~lPeak = 0.25;
-~thresh = 0.25;
+~lPeak = 0.02;
+~thresh = 0.02;
+~pitch = 0;
 
 ~hardwareInputs = 1;
 ~hardwareOutputs = 2;
@@ -12,18 +13,18 @@ Server.default.options.numInputBusChannels = ~hardwareInputs;
 Server.default.options.numOutputBusChannels = ~hardwareOutputs;
 s.options;
 s.reboot;
+s.meter;
 
 SynthDef(\audioIn, {
 
 	|out = 0,
 	in = 0|
 
-	var micIn;
-	micIn = SoundIn.ar(in, 1);
+	var micIn = SoundIn.ar(in, 1);
+
 	Out.ar(out, micIn)
 
 }).add;
-
 
 SynthDef(\inputAnalysis, {
 
@@ -37,7 +38,7 @@ SynthDef(\inputAnalysis, {
     centroid = SpecCentroid.kr(chain),
 	flat = SpecFlatness.kr(chain),
 	rolloff = SpecPcile.kr(chain, 0.5),
-	trig = Impulse.kr(20);
+	trig = Impulse.kr(10);
 
 	SendReply.kr(trig, '/analysis',[
 		peak,
@@ -53,37 +54,76 @@ SynthDef(\inputAnalysis, {
 
 }).add;
 
+~onsetFunctions = {
+	~detect = true;
+	~lPeak = 0.25;
+	~detect.postln;
+	~pitch = 0;
+};
+
+~offsetFunctions = {
+	~detect = false;
+	~detect.postln;
+
+	if (~pitch != 0, {
+		("Pitch: " + ~pitch).postln;
+	});
+};
+
+~analysisFunctions = {
+
+	|msg|
+
+	var amp = msg[4],
+	freq = msg[5],
+	hasFreq = msg[6].asBoolean,
+	centroid = msg[7],
+	flat = msg[8],
+	rolloff = msg[9];
+
+	if (hasFreq == true, {
+		~pitch = freq.asInteger;
+	}
+	);
+
+};
+
 ~envDetect = {
 
-	|peak = 0|
+	|msg|
+
+	var peak = msg[3];
+/*	~thresh.postln;
+	peak.postln;*/
 
 	if (~detect == false,
 		{
 
 		if (peak > (~thresh * 1.15), {
-			~detect = true;
-			~lPeak = 0.25;
-			~detect.postln;
+			~onsetFunctions.();
 			});
 		},
 
 		{
 		if (peak < ~thresh, {
-			~detect = false;
-			~detect.postln;
-				}, {
+			~offsetFunctions.();
+				},
+			{
 			if (peak > ~lPeak, {
 				~lPeak = peak;
 				~thresh = ~lPeak / 2;
 				if (~thresh < 0.25, ~thresh = 0.25);
 			});
+			~analysisFunctions.(msg);
 		});
 	});
+
 };
 
 )
 
 (
+
 ~analysisBus = Bus.audio(s, 1);
 ~inputGroup = Group.tail(s);
 ~analysisGroup = Group.tail(s);
@@ -106,17 +146,19 @@ Synth(
 );
 
 
-OSCdef(\listener, {
+OSCdef(
+	\listener, {
 
 	|msg|
 
-	var peak = msg[3];
-
-	~envDetect.(peak);
-
+	~envDetect.(msg);
 
 	// msg.postln;
 
 
 }, '/analysis');
+
+
 )
+
+
