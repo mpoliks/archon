@@ -1,7 +1,7 @@
 TODO:
-1. buffer incoming audio
-2. analyze buffer
-3. envtrig
+X. buffer incoming audio
+X. analyze buffer
+X. envtrig
 4. density
 5. lookup
 6. sample trig

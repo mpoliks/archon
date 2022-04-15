@@ -53,7 +53,36 @@ SynthDef(\inputAnalysis, {
 
 }).add;
 
+~envDetect = {
+
+	|peak = 0|
+
+	if (~detect == false,
+		{
+
+		if (peak > (~thresh * 1.15), {
+			~detect = true;
+			~lPeak = 0.25;
+			~detect.postln;
+			});
+		},
+
+		{
+		if (peak < ~thresh, {
+			~detect = false;
+			~detect.postln;
+				}, {
+			if (peak > ~lPeak, {
+				~lPeak = peak;
+				~thresh = ~lPeak / 2;
+				if (~thresh < 0.25, ~thresh = 0.25);
+			});
+		});
+	});
+};
+
 )
+
 (
 ~analysisBus = Bus.audio(s, 1);
 ~inputGroup = Group.tail(s);
@@ -83,33 +112,10 @@ OSCdef(\listener, {
 
 	var peak = msg[3];
 
-	if (~detect == false,
-		{
+	~envDetect.(peak);
 
-		if (peak > (~thresh * 1.15), {
-			~detect = true;
-			~lPeak = 0.25;
-			~detect.postln;
-			});
-		},
-
-		{
-		if (peak < ~thresh, {
-			~detect = false;
-			~detect.postln;
-				}, {
-			if (peak > ~lPeak, {
-				~lPeak = peak;
-				~thresh = ~lPeak / 2;
-				if (~thresh < 0.25, ~thresh = 0.25);
-			});
-		});
-	});
 
 	// msg.postln;
-
-
-
 
 
 }, '/analysis');
