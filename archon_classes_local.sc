@@ -2,6 +2,10 @@ Analysis {
 
 	var
 	detect = false,
+	c_buff = 0,
+	r_buff = 0,
+	f_buff = 0,
+	p_buff = 0,
 	counter = 0,
 	thresh = 0.02,
 	lPeak = 0.02,
@@ -16,6 +20,7 @@ Analysis {
 	init {
 		|bar|
 		"Analysis Initialized".postln;
+		this.clearBuffers();
 	}
 
 
@@ -31,13 +36,13 @@ Analysis {
 			{
 
 				if (peak > (thresh * 1.15), {
-					this.onsetFunctions.();
+					this.onsetFunctions();
 				});
 			},
 
 			{
 				if (peak < thresh, {
-					this.offsetFunctions.();
+					this.offsetFunctions();
 				},
 			{
 				if (peak > lPeak, {
@@ -45,7 +50,7 @@ Analysis {
 						thresh = lPeak / 2;
 						if (thresh < 0.25, thresh = 0.25);
 					});
-				this.analysisFunctions.(msg);
+				this.analysisFunctions(msg);
 			});
 		});
 	}
@@ -53,6 +58,7 @@ Analysis {
 	onsetFunctions {
 		detect = true;
 		lPeak = 0.25;
+		this.clearBuffers();
 		detect.postln;
 		pitch = 0;
 	}
@@ -61,9 +67,14 @@ Analysis {
 		detect = false;
 		detect.postln;
 
-		if (pitch != 0, {
-			("Pitch: " + pitch).postln;
+		if (p_buff.size > 0, {
+			("Pitch: " + p_buff.median).postln;
 		});
+
+		("Centroid:" + c_buff.median.asInt).postln;
+		("Rolloff:" + r_buff.median.asInt).postln;
+		("Flatness:" + f_buff.median).postln;
+
 	}
 
 	analysisFunctions {
@@ -74,15 +85,32 @@ Analysis {
 		freq = msg[5],
 		hasFreq = msg[6].asBoolean,
 		centroid = msg[7],
-		flat = msg[8],
-		rolloff = msg[9];
+		flatness = msg[8],
+		rolloff = msg[9],
+		this_c_buff = c_buff.add(centroid),
+		this_r_buff = r_buff.add(rolloff),
+		this_f_buff = f_buff.add(flatness),
+		this_p_buff;
 
-		counter += 1;
+		c_buff = this_c_buff;
+		r_buff = this_r_buff;
+		f_buff = this_f_buff;
 
 		if (hasFreq == true, {
-			pitch = freq.asInteger;
+			this_p_buff = p_buff.add(freq.asInteger);
+			p_buff = this_p_buff;
 		});
 
 	}
+
+	clearBuffers {
+
+		c_buff = Array.newClear(0);
+		r_buff = Array.newClear(0);
+		f_buff = Array.newClear(0);
+		p_buff = Array.newClear(0);
+
+	}
+
 
 }
