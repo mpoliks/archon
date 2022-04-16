@@ -1,12 +1,8 @@
 (
 
-~detect = false;
-~lPeak = 0.02;
-~thresh = 0.02;
-~pitch = 0;
-
 ~hardwareInputs = 1;
 ~hardwareOutputs = 2;
+~sr = 10;
 
 ServerOptions.devices;
 Server.default.options.numInputBusChannels = ~hardwareInputs;
@@ -32,13 +28,13 @@ SynthDef(\inputAnalysis, {
 
 	var input = In.ar(in),
 	peak = Amplitude.ar(input),
-	amp = RMS.ar(input).ampdb,
+	amp = RMS.ar(input),
 	freq = Pitch.kr(input),
 	chain = FFT(LocalBuf(2048), input),
     centroid = SpecCentroid.kr(chain),
 	flat = SpecFlatness.kr(chain),
 	rolloff = SpecPcile.kr(chain, 0.5),
-	trig = Impulse.kr(10);
+	trig = Impulse.kr(~sr);
 
 	SendReply.kr(trig, '/analysis',[
 		peak,
@@ -61,7 +57,7 @@ SynthDef(\inputAnalysis, {
 ~analysisBus = Bus.audio(s, 1);
 ~inputGroup = Group.tail(s);
 ~analysisGroup = Group.tail(s);
-~dsp = Analysis.new;
+~dsp = Analysis.new(~sr);
 
 
 Synth(
@@ -87,8 +83,6 @@ OSCdef(
 	|msg|
 
 	~dsp.envDetect(msg);
-
-	// msg.postln;
 
 }, '/analysis');
 
