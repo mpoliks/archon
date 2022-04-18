@@ -18,7 +18,7 @@ import math
 import os, os.path
 
 destination_db = "/content/drive/My Drive/IRCMS_GAN_collaborative_database/Experiments/colab-violingan/archon-analysis" #@param {type:"string"}
-des_datasize = "if known" #@param {type:"string"}
+dest_datasize = "46676" #@param {type:"string"}
 slice_size = "2" #@param {type:"string"}
 hop_length = "2048" #@param {type:"string"}
 sr = "44100" #@param {type:"string"}
@@ -27,21 +27,30 @@ output_filename = "/content/drive/My Drive/analysis.json" #@param {type:"string"
 hop = int(hop_length)
 sr = int(sr)
 slice_size = int(slice_size)
+dest_datasize = int(dest_datasize)
 counter = 0
 data = []
 
-dest_datasize = len([name for name in os.listdir(destination_db) if os.path.isfile(os.path.join(destination_db, name))])
+dest_datasize = len(
+    [name for name in os.listdir(destination_db) if os.path.isfile(
+        os.path.join(destination_db, name))])
+# NOTE: depending on size of folder, this can error out multiple times - 
+#Colab will cache the results, so retry until success and log the number for future attempts.
+print(dest_datasize)
 
 counter = 0
 data = []
 for filename in os.scandir(destination_db):
+
   if (filename.path.endswith(".wav")):
+
     y, sr = librosa.load(filename, sr=sr)
     c_buff = []
     f_buff = []
     r_buff = []
     v_buff = []
     p_buff = []
+
     c_buff.append(
         np.ndarray.flatten(
         librosa.feature.spectral_centroid(y=y, sr=sr, hop_length=hop)))
@@ -57,28 +66,29 @@ for filename in os.scandir(destination_db):
     p_buff.append(
         np.ndarray.flatten(
         librosa.yin(y,80,10000, hop_length=hop)))
+    
     id = filename.name
+    cent = np.median(c_buff)
+    flat = np.median(f_buff)
+    rolloff = np.median(r_buff)
+    rms = np.median(v_buff)
+    pitch = str(librosa.hz_to_note(np.median(p_buff)))
+
+    pitch = pitch.replace("♯", "#") 
+    oct = int(pitch[-1])
 
     data.append({ 
             "id": id,
-            "cent": str(np.median(c_buff)),
-            "flat": str(np.median(f_buff)),
-            "rolloff": str(np.median(r_buff)),
-            "rms": str(np.median(v_buff)),
-            "f0": str(librosa.hz_to_note(np.median(p_buff))) 
+            "cent": str(cent),
+            "flat": str(flat),
+            "rolloff": str(rolloff),
+            "rms": str(rms),
+            "pitch": pitch
         })
 
     counter += 1
-    print("completed " + str(counter) + " of " + str(dest_datasize))
-
-data = '''
-{
-  "sample: " ''' + str(data) + '''
-}
-'''
+    if (counter % 1000 == 0): print("completed " + str(counter) + " of " + str(dest_datasize))
 
 savefile = output_filename
 with open(savefile, 'a') as outfile:
   json.dump(data, outfile, indent=2)
-
-!mv "/content/analysis.json" ""
