@@ -24,6 +24,14 @@ slice_size = "2" #@param {type:"string"}
 slice_size = int(slice_size)
 counter = 0
 
+# OPTIONAL
+# dest_datasize = len(
+    # [name for name in os.listdir(destination_db) if os.path.isfile(
+        # os.path.join(destination_db, name))])
+# NOTE: depending on size of folder, this can error out multiple times - 
+#Colab will cache the results, so retry until success and log the number for future attempts.
+# print(dest_datasize)
+
 class SplitWav():
     def __init__(self, filename, destination):
         self.dest = destination
@@ -46,8 +54,6 @@ class SplitWav():
             filebase = filebase.rsplit( ".", 1)[0]
             split_fn = str(filebase) + "_" + str(i) + ".wav"
             self.single_split(i, i + sec_per_split, split_fn)
-
-dir_datasize = len([name for name in os.listdir(directory_db) if os.path.isfile(os.path.join(directory_db, name))])
 
 for filename in os.scandir(directory_db):
   if (filename.path.endswith(".wav")):  
