@@ -10,14 +10,21 @@ Original file is located at
 from google.colab import drive
 drive.mount('/content/drive')
 
+!pip install python-osc
 import numpy as np
 import json as json
 import os, os.path
+import argparse
+import math
 from scipy.spatial.distance import pdist
+import pythonosc
+
+from pythonosc import dispatcher
+from pythonosc import osc_server
 
 destination_db = "/content/drive/My Drive/IRCMS_GAN_collaborative_database/Experiments/colab-violingan/archon-analysis/" #@param {type:"string"}
 
-analysis_filename = "/content/drive/My Drive/analysis_f.json" #@param {type:"string"}
+analysis_filename = "/content/drive/My Drive/analysis_500ms.json" #@param {type:"string"}
 trial_filename = "/content/drive/My Drive/trial.json" #@param {type:"string"}
 
 ## IMPORT JSON FILE
@@ -35,14 +42,13 @@ def closest_node(input_db, comparative_db):
     min_ = "init"
     result_ = "error"
 
-    for entry in in_:
+    for k, v in in_.items():
 
-      for k, v in entry.items():
+      sample = v
 
-        sample = v
+      pitch = str(sample.get("pitch"))
 
-        ip = sample.get("pitch")
-        im = [
+      in_metrics = [
               float(
                   sample.get("cent")), 
               float(
@@ -51,21 +57,19 @@ def closest_node(input_db, comparative_db):
                   sample.get("rolloff"))]
 
 
-    for entry in db_:
-
-      for k, v in entry.items():
+    for k, v in db_.items():
 
         sample_ = v
-        if (ip == sample_.get("pitch")):
+        if (pitch == sample_.get("pitch")):
 
-          cm = [
+          db_metrics = [
                 float(
                     sample_.get("cent")), 
                 float(
                     sample_.get("flat")) * flatscl, 
                 float(
                     sample_.get("rolloff"))]
-          dist = pdist([im, cm], metric = 'euclidean')[0]
+          dist = pdist([in_metrics, db_metrics], metric = 'euclidean')[0]
 
           if (min_ == "init"): min_ = dist
           if (dist < min_):
@@ -74,5 +78,31 @@ def closest_node(input_db, comparative_db):
     
     return result_
 
-x = closest_node(trial_filename, analysis_filename)
+def print_volume_handler(unused_addr, args, volume):
+  print("[{0}] ~ {1}".format(args[0], volume))
+
+def print_compute_handler(unused_addr, args, volume):
+  try:
+    print("[{0}] ~ {1}".format(args[0], args[1](volume)))
+  except ValueError: pass
+
+if __name__ == "__main__":
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--ip",
+      default="127.0.0.1", help="The ip to listen on")
+  parser.add_argument("--port",
+      type=int, default=5005, help="The port to listen on")
+  args = parser.parse_args()
+
+  dispatcher = dispatcher.Dispatcher()
+  dispatcher.map("/filter", print)
+  dispatcher.map("/volume", print_volume_handler, "Volume")
+  dispatcher.map("/logvolume", print_compute_handler, "Log volume", math.log)
+
+  server = osc_server.ThreadingOSCUDPServer(
+      (args.ip, args.port), dispatcher)
+  print("Serving on {}".format(server.server_address))
+  server.serve_forever()
+
+  x = closest_node(trial_filename, analysis_filename)
 print(x)
