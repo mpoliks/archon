@@ -63,7 +63,7 @@ SynthDef(\inputAnalysis, {
 ~analysisBus = Bus.audio(s, 1);
 ~inputGroup = Group.tail(s);
 ~analysisGroup = Group.tail(s);
-~dsp = Analysis.new(~fr);
+~dsp = Analysis.new(~fr, ~netAddr);
 
 
 Synth(
