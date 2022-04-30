@@ -24,7 +24,7 @@
 		{
 			pitch = ref[(midi - 21) % 12];
 			oct = (((midi - 21) / 12).asInteger + 1).asString;
-			pitch = pitch + oct;
+			pitch = pitch ++ oct;
 		});
 
 		^pitch;
@@ -44,24 +44,24 @@
 		rms = this[4],
 		pitch = this[5],
 
-		str = "{" ++
-			id.asString ++
+		str = ("{" ++
+			'"' ++ id.asString ++ '"' ++
 			':{' ++
 			'"cent":' ++
-			cent.asString ++
+			'"' ++ cent.asString ++ '"' ++
 			',' ++
 			'"flat":' ++
-			flat.asString ++
+			'"' ++ flat.asString ++ '"' ++
 			',' ++
 			'"rolloff":' ++
-			rolloff.asString ++
+			'"' ++ rolloff.asString ++ '"' ++
 			',' ++
 			'"rms":' ++
-			rms.asString ++
+			'"' ++ rms.asString ++ '"' ++
 			',' ++
 			'"pitch":' ++
-			pitch.asString ++
-			'}';
+			'"' ++ pitch.asString ++ '"' ++
+			'}}').asString;
 
 		^ str;
 	}
