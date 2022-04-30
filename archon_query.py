@@ -10,6 +10,9 @@ import pythonosc
 
 from pythonosc import dispatcher
 from pythonosc import osc_server
+from pythonosc.udp_client import SimpleUDPClient
+
+
 
 def json_load (filename):
   f = open(filename)
@@ -37,7 +40,7 @@ def closest_node(in_, db_):
                   sample.get("rolloff"))]
 
 
-    for k, v in db_[0].items():
+    for k, v in db_.items():
 
         sample_ = v
         if (pitch == sample_.get("pitch")):
@@ -58,26 +61,34 @@ def closest_node(in_, db_):
     
     return result_
 
-def osc_handler(unused_addr, refdb, args):
-  #print("[{0}] ~ {1}".format(args[0], volume))
+def osc_handler(unused_addr, constants, args):
   incoming = json.loads(args)
-  node = closest_node(incoming, refdb)
+  node = closest_node(incoming, constants[0])
+  constants[1].send_message("/node", node)
   print(node)
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("--ip",
       default="127.0.0.1", help="The ip to listen on")
-  parser.add_argument("--port",
+  parser.add_argument("--in_port",
       type=int, default=5005, help="The port to listen on")
+  parser.add_argument("--out_port",
+      type=int, default=57120, help="The port to send to")      
   parser.add_argument("--file",
       default="/Users/marekpoliks/Desktop/ARCHON/analysis_500ms.json", help="Location of analysis file (json)")
   args = parser.parse_args()
+  
+  client = SimpleUDPClient(args.ip, args.out_port)
+  client.send_message("/superInterface", "Testing Connection w/ Supercollider")
 
   dispatcher = dispatcher.Dispatcher()
-  dispatcher.map("/test", osc_handler, json_load(args.file))
+
+  dispatcher.map("/test", osc_handler, json_load(args.file), client)
 
   server = osc_server.ThreadingOSCUDPServer(
-      (args.ip, args.port), dispatcher)
+      (args.ip, args.in_port), dispatcher)
+
   print("Serving on {}".format(server.server_address))
+
   server.serve_forever()

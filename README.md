@@ -18,7 +18,7 @@ Python JSON Interpretation [X]
 
 Python Local Query [X]
 
-Python -> Supercollider Server Communication [ ]
+Python -> Supercollider Server Communication [X]
 
 Supercollider Query Result Handler [ ]
 

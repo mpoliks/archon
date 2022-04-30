@@ -93,6 +93,26 @@ OSCdef(
 }, '/analysis');
 
 
+OSCdef(
+	\pythonlistener, {
+
+	|msg|
+
+	msg.postln;
+
+}, '/superInterface');
+
+
+OSCdef(
+	\nodelistener, {
+
+	|msg|
+
+	msg.postln;
+
+}, '/node');
+
+
 )
 
 
