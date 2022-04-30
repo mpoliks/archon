@@ -1,8 +1,10 @@
 (
 
+~netAddr = NetAddr("127.0.0.1", 5005);
+
 ~hardwareInputs = 1;
 ~hardwareOutputs = 2;
-~sr = 10;
+~fr = 10;
 
 ServerOptions.devices;
 Server.default.options.numInputBusChannels = ~hardwareInputs;
@@ -34,18 +36,22 @@ SynthDef(\inputAnalysis, {
     centroid = SpecCentroid.kr(chain),
 	flat = SpecFlatness.kr(chain),
 	rolloff = SpecPcile.kr(chain, 0.5),
-	trig = Impulse.kr(~sr);
+	trig = Impulse.kr(~fr);
 
-	SendReply.kr(trig, '/analysis',[
-		peak,
-		amp,
-		freq[0].cpsmidi,
-		freq[1],
-		centroid,
-		flat,
-		rolloff
+	if (freq[1] == 0, {
+		freq[0] = 0
+	}
+	);
 
-	],
+	SendReply.kr(trig,
+		'/analysis',[
+			peak,
+			amp,
+			freq[0].cpsmidi,
+			centroid,
+			flat,
+			rolloff
+			],
 		in);
 
 }).add;
@@ -57,7 +63,7 @@ SynthDef(\inputAnalysis, {
 ~analysisBus = Bus.audio(s, 1);
 ~inputGroup = Group.tail(s);
 ~analysisGroup = Group.tail(s);
-~dsp = Analysis.new(~sr);
+~dsp = Analysis.new(~fr);
 
 
 Synth(
@@ -89,3 +95,5 @@ OSCdef(
 
 )
 
+
+// ~netAddr.sendMsg("/test");
