@@ -8,8 +8,8 @@ Analysis {
 	tick = 0,
 	addr,
 
-	thresh = 0.05,
-	lPeak = 0.05,
+	thresh = 0.01,
+	lPeak = 0.01,
 
 	dict;
 
@@ -83,6 +83,7 @@ Analysis {
 		str = [ctr, cent, flat, rolloff, rms, pitch].archonJSON;
 
 		str.postln;
+
 		addr.sendMsg("/test", str);
 		ctr = ctr + 1;
 
@@ -92,20 +93,24 @@ Analysis {
 
 		|msg|
 
+		msg.postln;
+
 		dict.putAll(
 			Dictionary[("a" ++ tick.asString) ->
 				Dictionary[
-					\cent -> msg[6],
-					\flat -> msg[7],
-					\rolloff -> msg[8],
+					\cent -> msg[7],
+					\flat -> msg[8],
+					\rolloff -> msg[9],
 					\rms -> msg[4]
 					]
 				]
 			);
 
-		 if (msg[5] != 0, {
-			dict.values[tick].add(\pitch -> msg[5])
+		 if (msg[6].asFloat > 0.0, {
+			dict.at(("a" ++ tick.asString)).putAll(Dictionary[\pitch -> msg[5].cpsmidi]);
 			});
+
+		dict.at("a" ++ tick.asString).postln;
 
 		tick = tick + 1;
 
@@ -124,7 +129,9 @@ Analysis {
 			})
 		};
 
-		if (plist.size > 0, {
+		plist.postln;
+
+		if (plist.size > (dict.values.size / 2), {
 			pitch = plist.median.midipitch;
 		},
 		{

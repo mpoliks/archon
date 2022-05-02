@@ -38,21 +38,19 @@ SynthDef(\inputAnalysis, {
 	rolloff = SpecPcile.kr(chain, 0.5),
 	trig = Impulse.kr(~fr);
 
-	if (freq[1] == 0, {
-		freq[0] = 0
-	}
-	);
 
 	SendReply.kr(trig,
 		'/analysis',[
 			peak,
 			amp,
-			freq[0].cpsmidi,
+			freq[0],
+			freq[1],
 			centroid,
 			flat,
 			rolloff
 			],
 		in);
+
 
 }).add;
 
