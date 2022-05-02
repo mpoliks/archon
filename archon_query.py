@@ -1,18 +1,15 @@
 import string
-from turtle import ycor
-from scipy.spatial.distance import pdist
 import numpy as np
 import json as json
 import os, os.path
 import argparse
 import math
-import pythonosc
 
+from turtle import ycor
+from scipy.spatial.distance import pdist
 from pythonosc import dispatcher
 from pythonosc import osc_server
 from pythonosc.udp_client import SimpleUDPClient
-
-
 
 def json_load (filename):
     f = open(filename)
@@ -23,6 +20,10 @@ def format(audiofile, target_dict, target_audiodir):
 
     sample = target_dict.get(audiofile)
     pitch = sample.get("pitch")
+      
+    #ensure Takeout-safe formatting  
+    if audiofile[:-6] != 'ms.wav': 
+        audiofile = audiofile[:-4] + "ms.wav"
 
     if (pitch != "unpitched"): 
       oct = int(pitch[-1])
@@ -46,7 +47,6 @@ def format(audiofile, target_dict, target_audiodir):
     
     return return_dir + audiofile
 
-
 def closest_node(in_, db_):
 
     flatscl = 100000.0
@@ -66,7 +66,6 @@ def closest_node(in_, db_):
                   sample.get("flat")) * flatscl, 
               float(
                   sample.get("rolloff"))]
-
 
     for k, v in db_.items():
 
@@ -90,10 +89,14 @@ def closest_node(in_, db_):
     return result_
 
 def osc_handler(unused_addr, constants, args):
+
     target_dict, target_audiodir, client = constants[0], constants[1], constants[2]
+
     incoming = json.loads(args)
+
     node = closest_node(incoming, target_dict)
     node = format(node, target_dict, target_audiodir)
+
     client.send_message("/node", node)
     print(node)
 

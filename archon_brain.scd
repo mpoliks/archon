@@ -56,6 +56,37 @@ SynthDef(\inputAnalysis, {
 
 }).add;
 
+SynthDef(\playback, {
+
+	|out = 0,
+	attack,
+	release,
+	buffer,
+	loop,
+	envTrig,
+	done,
+	amp = 1.0|
+
+	var env, sig;
+
+	env = EnvGen.kr(
+		Env.asr(attack, amp, release),
+		envTrig,
+		doneAction: 2
+	);
+
+	sig = PlayBuf.ar(
+			1,
+			buffer,
+			rate: 1,
+			loop: loop,
+			doneAction: 2);
+
+	sig = (sig * env * amp);
+	Out.ar(out, sig);
+
+}).add;
+
 )
 
 (
@@ -63,6 +94,7 @@ SynthDef(\inputAnalysis, {
 ~analysisBus = Bus.audio(s, 1);
 ~inputGroup = Group.tail(s);
 ~analysisGroup = Group.tail(s);
+~outputGroup = Group.tail(s);
 ~dsp = Analysis.new(~fr, ~netAddr);
 
 
@@ -108,12 +140,23 @@ OSCdef(
 
 	|msg|
 
-	msg.postln;
+	var buf;
+
+	buf = Buffer.read(s, msg[1], action: {
+		Synth(
+			\playback,
+				[
+					\out, 0,
+					\buffer, buf,
+					\envTrig, 1,
+					\loop, 0
+				],
+				~outputGroup
+			)
+		});
+
 
 }, '/node');
 
 
 )
-
-
-// ~netAddr.sendMsg("/test");
