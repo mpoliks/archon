@@ -1,26 +1,66 @@
-import string
+from multiprocessing.connection import Client
 import numpy as np
 import json as json
 import os, os.path
 import argparse
-import math
+import torch
+import pandas as pd
 
 from turtle import ycor
-from scipy.spatial.distance import pdist
-from pythonosc import dispatcher
-from pythonosc import osc_server
+from pythonosc import dispatcher, osc_server
 from pythonosc.udp_client import SimpleUDPClient
 
-def json_load (filename):
-    f = open(filename)
-    l = json.load(f)
-    return l
+def dataframe_from_file(filename):
+    with open(filename) as t:
+        data = json.load(t)
+        df = pd.DataFrame(data).T
+    database_as_df = dict(tuple((df.groupby('pitch'))))
+    return database_as_df
 
-def format(audiofile, target_dict, target_audiodir):
+def tensor_dict_from_dataframe(database_as_df):
+    tens_dict = {}
+    for k,v in database_as_df.items():
+        v_nopitch = v.drop(labels = 'pitch', axis = 1)
+        column_list = list(v_nopitch.columns)
+        tens_dict[k] = torch.tensor(
+            v_nopitch.loc[:, column_list]
+            .to_numpy(dtype=np.float32))
+    return tens_dict
 
-    sample = target_dict.get(audiofile)
-    pitch = sample.get("pitch")
-      
+def process_input(input_dict):
+
+    print(input_dict)
+
+    pitch = list(input_dict.items())[0][1].get("pitch")
+
+    input_as_df = pd.DataFrame(input_dict).T
+    input_as_df = input_as_df.drop(labels='pitch', axis=1)
+
+    column_list = list(input_as_df.columns)
+
+    in_t = torch.tensor(
+        input_as_df.loc[:, column_list]
+        .to_numpy(dtype=np.float32))
+
+    return pitch, in_t
+
+def closest_node(input_dataframe, database_dataframe, database_tensors, audiodir):
+
+    pitch, input_tensor = process_input(input_dataframe)
+    this_database_tensor = database_tensors.get(pitch)
+
+    dist = torch.cdist(input_tensor, this_database_tensor, p=2) 
+    print(dist)
+    result_ = torch.argmin(dist, axis=1).cpu().numpy()
+
+    formatted_result = format_result(database_dataframe.get(pitch).iloc[result_], pitch, audiodir)
+
+    return formatted_result
+
+def format_result(sample, pitch, target_audiodir):
+
+    print(sample)
+    audiofile = sample.index[0]
     #ensure Takeout-safe formatting  
     if audiofile[:-6] != 'ms.wav': 
         audiofile = audiofile[:-4] + "ms.wav"
@@ -47,60 +87,19 @@ def format(audiofile, target_dict, target_audiodir):
     
     return return_dir + audiofile
 
-def closest_node(in_, db_):
-
-    flatscl = 100000.0
-    min_ = "init"
-    result_ = "error"
-
-    for k, v in in_.items():
-
-      sample = v
-
-      pitch = str(sample.get("pitch"))
-
-      in_metrics = [
-              float(
-                  sample.get("cent")), 
-              float(
-                  sample.get("flat")) * flatscl, 
-              float(
-                  sample.get("rolloff"))]
-
-    for k, v in db_.items():
-
-        sample_ = v
-        if (pitch == sample_.get("pitch")):
-
-          db_metrics = [
-                float(
-                    sample_.get("cent")), 
-                float(
-                    sample_.get("flat")) * flatscl, 
-                float(
-                    sample_.get("rolloff"))]
-          dist = pdist([in_metrics, db_metrics], metric = 'euclidean')[0]
-
-          if (min_ == "init"): min_ = dist
-          if (dist < min_):
-            min_ = dist
-            result_ = (k)
-    
-    return result_
-
 def osc_handler(unused_addr, constants, args):
 
-    target_dict, target_audiodir, client = constants[0], constants[1], constants[2]
+    database_dataframe, database_tensors, audiodir, client = constants[0], constants[1], constants[2], constants[3]
 
     incoming = json.loads(args)
 
-    node = closest_node(incoming, target_dict)
-    node = format(node, target_dict, target_audiodir)
+    node = closest_node(incoming, database_dataframe, database_tensors, audiodir)
 
     client.send_message("/node", node)
     print(node)
 
 if __name__ == "__main__":
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--ip",
         default="127.0.0.1", help="The ip to listen on")
@@ -117,9 +116,16 @@ if __name__ == "__main__":
     client = SimpleUDPClient(args.ip, args.out_port)
     client.send_message("/superInterface", "Testing Connection w/ Supercollider")
 
+    print("OK: loading database... this can take a minute if the database is huge!")
+    database_dataframe = dataframe_from_file(args.file)
+    print("OK: complete!")
+    print("OK: loading tensors...")
+    database_tensors = tensor_dict_from_dataframe(database_dataframe)
+    print("OK: complete!")
+
     dispatcher = dispatcher.Dispatcher()
 
-    dispatcher.map("/test", osc_handler, json_load(args.file), args.audiodb, client)
+    dispatcher.map("/test", osc_handler, database_dataframe, database_tensors, args.audiodb, client)
 
     server = osc_server.ThreadingOSCUDPServer(
         (args.ip, args.in_port), dispatcher)
