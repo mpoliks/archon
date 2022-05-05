@@ -47,15 +47,22 @@ def process_input(input_dict):
 def closest_node(input_dataframe, database_dataframe, database_tensors, audiodir):
 
     pitch, input_tensor = process_input(input_dataframe)
+    if pitch not in database_dataframe: pitch = "unpitched"
+
     this_database_tensor = database_tensors.get(pitch)
+    result = []
 
-    dist = torch.cdist(input_tensor, this_database_tensor, p=2) 
-    print(dist)
-    result_ = torch.argmin(dist, axis=1).cpu().numpy()
+    dist = torch.cdist(input_tensor, this_database_tensor, p=2).flatten() 
 
-    formatted_result = format_result(database_dataframe.get(pitch).iloc[result_], pitch, audiodir)
+    for i in range(5):
+        values, indices = torch.kthvalue(dist, i + 1)
+        result.append(
+            format_result(
+                database_dataframe.get(pitch).iloc[indices.item()], 
+                pitch, 
+                audiodir))
 
-    return formatted_result
+    return result
 
 def format_result(sample, pitch, target_audiodir):
 
