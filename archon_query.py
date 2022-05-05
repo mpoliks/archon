@@ -20,7 +20,7 @@ def dataframe_from_file(filename):
 def tensor_dict_from_dataframe(database_as_df):
     tens_dict = {}
     for k,v in database_as_df.items():
-        v_nopitch = v.drop(labels = 'pitch', axis = 1)
+        v_nopitch = v.drop(labels = 'pitch', axis = 1).drop(labels='rms', axis=1).drop(labels='flat', axis=1)
         column_list = list(v_nopitch.columns)
         tens_dict[k] = torch.tensor(
             v_nopitch.loc[:, column_list]
@@ -34,7 +34,7 @@ def process_input(input_dict):
     pitch = list(input_dict.items())[0][1].get("pitch")
 
     input_as_df = pd.DataFrame(input_dict).T
-    input_as_df = input_as_df.drop(labels='pitch', axis=1)
+    input_as_df = input_as_df.drop(labels='pitch', axis=1).drop(labels='rms', axis=1).drop(labels='flat', axis=1)
 
     column_list = list(input_as_df.columns)
 
@@ -67,7 +67,7 @@ def closest_node(input_dataframe, database_dataframe, database_tensors, audiodir
 def format_result(sample, pitch, target_audiodir):
 
     print(sample)
-    audiofile = sample.index[0]
+    audiofile = sample.name
     #ensure Takeout-safe formatting  
     if audiofile[:-6] != 'ms.wav': 
         audiofile = audiofile[:-4] + "ms.wav"
