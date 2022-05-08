@@ -23,6 +23,7 @@ Pkill : Pattern {
 				var name = streampairs[i];
 				var stream = streampairs[i+1];
 				var streamout = stream.next(event);
+				event.postln;
 				if (streamout.isNil) {
 					this.kill(streampairs[endval + 1]);
 					^inevent };
@@ -244,6 +245,7 @@ Handler {
 					[0],
 					(~reverbMidBus!2)], inf),
 				{
+					"dying".postln;
 					buf.do {
 						|b|
 						Buffer.free(b);
@@ -259,6 +261,8 @@ Handler {
 
 		var buf = List.new();
 
+		"msg received by handler".postln;
+
 		msg.postln;
 
 		msg.size.do {
@@ -269,14 +273,16 @@ Handler {
 
 			if (i < (msg.size - 1), {
 				b = Buffer.read(server, msg[i], action: {
+					"reading buffers".postln;
 					buf.add(b);
 					})
 				},
 				{
-				b = buf.add(Buffer.read(server, msg[i], action: {
+				b = Buffer.read(server, msg[i], action: {
 					buf.add(b);
+					"buffers read".postln;
 					this.patternPlayer(buf);
-				}));
+				});
 			});
 		};
 	}
