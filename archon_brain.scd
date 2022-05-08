@@ -1,6 +1,7 @@
 (
 
 ~netAddr = NetAddr("127.0.0.1", 5005);
+("OK: Listening on " + NetAddr.langPort.asString + ".").postln;
 
 ~hardwareInputs = 1;
 ~hardwareOutputs = 2;
@@ -192,7 +193,7 @@ OSCdef(
 
 	var thishandler;
 
-	"sending message to handler".postln;
+	"OK: Sending message to handler.".postln;
 	thishandler = Handler.new;
 
 	thishandler.msg_handler(msg[1..msg.size], s);

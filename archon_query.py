@@ -54,7 +54,7 @@ def closest_node(input_dataframe, database_dataframe, database_tensors, audiodir
 
     dist = torch.cdist(input_tensor, this_database_tensor, p=2).flatten() 
 
-    for i in range(25):
+    for i in range(3):
         values, indices = torch.kthvalue(dist, i + 1)
         result.append(
             format_result(
