@@ -14,6 +14,8 @@ s.options;
 s.reboot;
 s.meter;
 
+s.waitForBoot {
+
 SynthDef(\playback, {
 	|rate = 1,
 	atk = 0.1,
@@ -98,9 +100,8 @@ SynthDef(\freezeVerb, {
 
 }).add;
 
-)
+s.sync;
 
-(
 ~analysisBus = Bus.audio(s, 1);
 ~reverbShortBus = Bus.audio(s,2);
 ~reverbMidBus = Bus.audio(s,2);
@@ -161,9 +162,7 @@ Synth(
 	], ~fxGroup
 );
 
-)
-
-(
+s.sync;
 
 
 OSCdef(
@@ -181,7 +180,7 @@ OSCdef(
 
 	|msg|
 
-	msg.postln;
+	"OK: ACK from Python".postln;
 
 }, '/superInterface');
 
@@ -201,7 +200,8 @@ OSCdef(
 
 }, '/node');
 
+"OK: Ready!".postln;
 
+}
 
 )
-
