@@ -1,3 +1,56 @@
+Pkill : Pattern {
+	var <>patternpairs;
+	*new { arg ... pairs;
+		// if (pairs.size.odd, { Error("Pbind should have even number of args.\n").throw; });
+		^super.newCopyArgs(pairs)
+	}
+
+	storeArgs { ^patternpairs }
+	embedInStream { arg inevent;
+		var event;
+		var sawNil = false;
+		var streampairs = patternpairs.copy;
+		var endval = streampairs.size - 2;
+
+		forBy (1, endval, 2) { arg i;
+			streampairs.put(i, streampairs[i].asStream);
+		};
+
+		loop {
+			if (inevent.isNil) { ^nil.yield };
+			event = inevent.copy;
+			forBy (0, endval, 2) { arg i;
+				var name = streampairs[i];
+				var stream = streampairs[i+1];
+				var streamout = stream.next(event);
+				if (streamout.isNil) {
+					this.kill(streampairs[endval + 1]);
+					^inevent };
+
+				if (name.isSequenceableCollection) {
+					if (name.size > streamout.size) {
+						("the pattern is not providing enough values to assign to the key set:" + name).warn;
+						^inevent
+					};
+					name.do { arg key, i;
+						event.put(key, streamout[i]);
+					};
+				}{
+					event.put(name, streamout);
+				};
+
+			};
+			inevent = event.yield;
+		};
+	}
+
+	kill {
+		|killed|
+		killed.value(killed);
+	}
+}
+
+
 Analysis {
 
 	var
@@ -26,7 +79,6 @@ Analysis {
 		sr = 1000 / r;
 
 		addr = netAddr;
-		addr.postln;
 
 		"OK: Analysis Initialized".postln;
 
@@ -38,8 +90,6 @@ Analysis {
 		|msg|
 
 		var peak = msg[3];
-		// thresh.postln;
-		// peak.postln;
 
 		if (detect == false,
 			{
@@ -70,7 +120,7 @@ Analysis {
 		lPeak = 0.25;
 		dict = Dictionary.new;
 		tick = 0;
-		detect.postln;
+		"OK: Onset Detected".postln;
 	}
 
 	offsetFunctions {
@@ -81,7 +131,7 @@ Analysis {
 		rms = this.getMetric('rms'),
 		pitch = this.getPitch(),
 		str = [ctr, cent, flat, rolloff, rms, pitch].archonJSON;
-
+		"OK: Offset Detected".postln;
 		str.postln;
 
 		addr.sendMsg("/test", str);
@@ -92,8 +142,6 @@ Analysis {
 	analysisFunctions {
 
 		|msg|
-
-		msg.postln;
 
 		dict.putAll(
 			Dictionary[("a" ++ tick.asString) ->
@@ -129,8 +177,6 @@ Analysis {
 			})
 		};
 
-		plist.postln;
-
 		if (plist.size > (dict.values.size / 2), {
 			pitch = plist.median.midipitch;
 		},
@@ -158,3 +204,82 @@ Analysis {
 	}
 
 }
+
+
+
+Handler {
+
+	*new {
+
+        ^super.new.init()
+	}
+
+
+	init {
+
+		"OK: Handler Initialized".postln;
+
+	}
+
+
+	patternPlayer {
+
+		|buf|
+
+		Pdef(
+			\rhythm, Pkill(
+				\instrument, \playback,
+				\env, 1,
+				\dur, Pseq([
+					Pwhite(0.05, 0.2, 4),
+					Pwhite(0.01, 0.02, 5),
+					Pwhite(0.4, 1.2, 4)], 1),
+				\rate, Pseq([1.0]++(2.0!2)++[0.5]++(1.0!2)++[2.0], 1),
+				\buf, Pshuf(buf, inf),
+				\pan, Pwhite(-1, 1),
+				\out, Pseq([
+					(0!10),
+					(~reverbShortBus!4),
+					(~reverbLongBus!2),
+					[0],
+					(~reverbMidBus!2)], inf),
+				{
+					buf.do {
+						|b|
+						Buffer.free(b);
+						(b.asString + "freed ").postln;
+					}
+				}
+			)
+		).play
+	}
+
+	msg_handler {
+		|msg, server|
+
+		var buf = List.new();
+
+		msg.postln;
+
+		msg.size.do {
+
+			|i|
+
+			var b;
+
+			if (i < (msg.size - 1), {
+				b = Buffer.read(server, msg[i], action: {
+					buf.add(b);
+					})
+				},
+				{
+				b = buf.add(Buffer.read(server, msg[i], action: {
+					buf.add(b);
+					this.patternPlayer(buf);
+				}));
+			});
+		};
+	}
+
+}
+	
