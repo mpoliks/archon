@@ -15,14 +15,20 @@ HDVerb {
 
 		dry = in;
 		wet = in;
-		wet = DelayN.ar(wet, 0.5, predelay.clip(0.0001, 0.5));
+		wet = DelayN.ar(
+			wet,
+			0.5,
+			predelay.clip(0.0001, 0.5));
 
 		wet = 16.collect{
 			var temp;
 			temp = CombL.ar(
 				wet,
 				0.1,
-				LFNoise1.kr({ExpRand(0.02, 0.04)}!2).exprange(0.02, 0.099),
+				LFNoise1.kr(
+					{
+						ExpRand(0.02, 0.04)
+				}!2).exprange(0.02, 0.099),
 				decay
 			);
 			temp = LPF.ar(temp, lpf1);
@@ -32,7 +38,10 @@ HDVerb {
 			wet = AllpassL.ar(
 				wet,
 				0.1,
-				LFNoise1.kr({ExpRand(0.02,0.04)}!2).exprange(0.02, 0.099),
+				LFNoise1.kr(
+					{
+						ExpRand(0.02,0.04)
+				}!2).exprange(0.02, 0.099),
 				decay
 			);
 		};
@@ -63,7 +72,10 @@ FreezeVerb {
 		dry = in;
 		temp = in;
 		wet = 0;
-		temp = DelayN.ar(temp, 0.2, predelay);
+		temp = DelayN.ar(
+			temp,
+			0.2,
+			predelay);
 
 		16.do {
 			temp = AllpassN.ar(
@@ -75,7 +87,11 @@ FreezeVerb {
 			wet = wet + temp;
 		};
 
-		sig = XFade2.ar(dry, wet, mix * 2 - 1, amp);
+		sig = XFade2.ar(
+			dry,
+			wet,
+			mix * 2 - 1,
+			amp);
 
 		^ sig * mul + add;
 

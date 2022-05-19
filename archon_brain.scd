@@ -32,12 +32,16 @@ SynthDef(\playback, {
 		buf,
 		BufRateScale.ir(buf) * rate,
 		doneAction: 2);
-	env = EnvGen.kr(Env.new([0,1,0],[atk, rel],[1, -1]),doneAction:2);
+	env = EnvGen.kr(
+			Env.new(
+				[0,1,0],
+				[atk, rel],
+				[1, -1]),
+			doneAction:2);
 	sig = Pan2.ar(sig, pan, amp);
 	Out.ar(out, sig * env);
 
 }).add;
-
 
 SynthDef(\audioIn, {
 
@@ -49,7 +53,6 @@ SynthDef(\audioIn, {
 	Out.ar(out, micIn)
 
 }).add;
-
 
 SynthDef(\inputAnalysis, {
 
@@ -65,7 +68,6 @@ SynthDef(\inputAnalysis, {
 	rolloff = SpecPcile.kr(chain, 0.5),
 	trig = Impulse.kr(~fr);
 
-
 	SendReply.kr(trig,
 		'/analysis',[
 			peak,
@@ -78,31 +80,48 @@ SynthDef(\inputAnalysis, {
 			],
 		in);
 
-
 }).add;
-
 
 SynthDef(\hdVerb, {
 	|in, out, predelay, decay, lpf1, lpf2|
 	var sig;
 
 	sig = In.ar(in, 2);
-	sig = HDVerb.ar(sig, predelay: predelay, decay: decay, lpf1: lpf1, lpf2: lpf2);
+	sig = Compander.ar(sig,
+			sig,
+			thresh: 0.5,
+			slopeBelow: 1.0,
+			slopeAbove: 0.25,
+			clampTime: 0.01,
+			relaxTime: 0.09);
+	sig = HDVerb.ar(sig,
+			predelay: predelay,
+			decay: decay,
+			lpf1: lpf1,
+			lpf2: lpf2);
 	Out.ar(out, sig);
 
 }).add;
-
 
 SynthDef(\freezeVerb, {
 	|in, out, predelay, decay, lpf|
 	var sig;
 
 	sig = In.ar(in, 2);
-	sig = FreezeVerb.ar(sig, predelay: predelay, decay: decay, lpf: lpf);
+	sig = Compander.ar(sig,
+			sig,
+			thresh: 0.5,
+			slopeBelow: 1.0,
+			slopeAbove: 0.25,
+			clampTime: 0.01,
+			relaxTime: 0.09);
+	sig = FreezeVerb.ar(sig,
+			predelay: predelay,
+			decay: decay,
+			lpf: lpf);
 	Out.ar(out, sig);
 
 }).add;
-
 
 SynthDef(\dryIO, {
 
@@ -122,7 +141,6 @@ SynthDef(\dryIO, {
 	Out.ar(out, sig);
 
 }).add;
-
 
 SynthDef(\mixIO, {
 
@@ -163,14 +181,12 @@ s.sync;
 ~dsp = Analysis.new(~fr, ~netAddr);
 ~handler = Handler.new;
 
-
 Synth(
 	\audioIn, [
 		\out, ~analysisBus.index,
 		\in, 0
 	], ~inputGroup
 );
-
 
 Synth(
 	\inputAnalysis, [
@@ -225,7 +241,6 @@ Synth(
 );
 
 s.sync;
-
 
 OSCdef(
 	\listener, {
