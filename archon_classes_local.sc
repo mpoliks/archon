@@ -1,7 +1,6 @@
 Pkill : Pattern {
 	var <>patternpairs;
 	*new { arg ... pairs;
-		// if (pairs.size.odd, { Error("Pbind should have even number of args.\n").throw; });
 		^super.newCopyArgs(pairs)
 	}
 
@@ -62,6 +61,9 @@ Analysis {
 	tick = 0,
 	addr,
 
+	onsetList,
+	offsetList,
+
 	thresh = 0.01,
 	lPeak = 0.01,
 
@@ -79,10 +81,42 @@ Analysis {
 
 		sr = 1000 / r;
 
+		onsetList = List.new();
+		offsetList = List.new();
+
 		addr = netAddr;
 
 		"OK: Analysis Initialized".postln;
 
+	}
+
+	calculateDensity {
+
+		var density, windowsize;
+
+		if (onsetList.size > 1, {
+
+			if (onsetList.size > 10, {
+
+				onsetList = onsetList[1..onsetList.size];
+				offsetList = offsetList[1..offsetList.size];
+			});
+
+			density = Array.fill(onsetList.size - 1, {
+				|i|
+				onsetList[i + 1] - onsetList[i]}).mean;
+
+			windowsize = Array.fill(onsetList.size, {
+				|i|
+				offsetList[i] - onsetList[i]}).mean;
+
+		},
+		{
+			density = 0;
+			windowsize = 0;
+		});
+
+	^ [density, windowsize];
 	}
 
 
@@ -118,10 +152,13 @@ Analysis {
 	}
 
 	onsetFunctions {
+
 		lPeak = 0.25;
 		dict = Dictionary.new;
 		tick = 0;
 		"OK: Onset Detected".postln;
+		onsetList.add(Date.getDate.rawSeconds);
+
 	}
 
 	offsetFunctions {
@@ -131,12 +168,27 @@ Analysis {
 		flat = this.getMetric('flat'),
 		rms = this.getMetric('rms'),
 		pitch = this.getPitch(),
-		str = [ctr, cent, flat, rolloff, rms, pitch].archonJSON;
+		str = [ctr, cent, flat, rolloff, rms, pitch].archonJSON,
+		density, windowsize, calc;
 		"OK: Offset Detected".postln;
 		str.postln;
 
+		offsetList.add(Date.getDate.rawSeconds);
+
+		calc = this.calculateDensity();
+
+		density = calc[0];
+		windowsize = calc[1];
+
+		NetAddr.localAddr.sendMsg("/behavior", density, windowsize, cent, rolloff, flat, rms, pitch);
+
+
 		addr.sendMsg("/test", str);
 		ctr = ctr + 1;
+
+
+
+
 
 	}
 
@@ -210,6 +262,8 @@ Analysis {
 
 Handler {
 
+	var state = "halftime";
+
 	*new {
 
         ^super.new.init()
@@ -222,8 +276,17 @@ Handler {
 
 	}
 
+	switchstate {
 
-	patternPlayer {
+		|args|
+
+		state = args;
+
+	}
+
+
+
+	sciarrinoPlayer {
 
 		|buf|
 
@@ -245,7 +308,6 @@ Handler {
 					[0],
 					(~reverbMidBus!2)], inf),
 				{
-					"dying".postln;
 					buf.do {
 						|b|
 						Buffer.free(b);
@@ -256,12 +318,162 @@ Handler {
 		).play
 	}
 
+	machinePlayer {
+
+		|buf|
+
+		Pdef(
+			\rhythm, Pkill(
+				\instrument, \playback,
+				\env, 1,
+				\dur, Pwhite(0.05, 0.06),
+				\rate, 0.5,
+				\rel, 0.24,
+				\buf, Pshuf(buf, inf),
+				\pan, Pwhite(-1, 1),
+				\out, Pseq([
+					(0!7),
+					(~reverbShortBus!1)],
+					45),
+				{
+					buf.do {
+						|b|
+						Buffer.free(b);
+						(b.asString + "freed ").postln;
+					}
+				}
+			)
+		).play
+	}
+
+	techPlayer {
+
+		|buf|
+
+		var temp = rrand(0.1, 0.3);
+
+		Pdef(
+			\rhythm, Pkill(
+				\instrument, \playback,
+				\env, 1,
+				\dur, temp,
+				\rate, Pseq([
+        			Pseries({ rrand(1.0, 1.01) }, 1, { rrand(2.0, 2.01) }),
+        			Pseries({ rrand(1.0, 1.01) }, 1, { rrand(0.1, 0.7) }),
+					Pseries({ rrand(1.0, 1.01) }, { rrand(2.0, 2.02) })], rrand(1, 4)),
+				\atk, Pwhite(0.001, 0.01),
+				\rel, Pwhite(0.05, 0.14),
+				\buf, Pshuf(buf, inf),
+				\pan, Pwhite(-0.2, 0.2),
+				\out, Pseq([
+					(0!3),
+					(~reverbShortBus!1)],
+					50),
+				{
+					buf.do {
+						|b|
+						Buffer.free(b);
+						(b.asString + "freed ").postln;
+					}
+				}
+			)
+		).play
+	}
+
+	stretchPlayer {
+
+		|buf|
+
+		Pdef(
+			\rhythm, Pkill(
+				\instrument, \playback,
+				\env, 1,
+				\dur, Pwhite(0.01, 0.6),
+				\rate, 0.25,
+				\rel, 1.8,
+				\buf, Pshuf(buf, inf),
+				\pan, Pwhite(-0.2, 0.2),
+				\out, Pseq([
+					(0!2),
+					(~reverbShortBus!1),
+					(~reverbMidBus!2),
+				],
+					rrand(4, 13)),
+				{
+					buf.do {
+						|b|
+						Buffer.free(b);
+						(b.asString + "freed ").postln;
+					}
+				}
+			)
+		).play
+	}
+
+	halftimePlayer {
+
+		|buf|
+
+		Pdef(
+			\rhythm, Pkill(
+				\instrument, \playback,
+				\env, 1,
+				\dur, Pwhite(0.01, 0.3),
+				\rate, Pseq([
+					(0.5!3),
+					-0.5], inf),
+				\rel, 0.9,
+				\buf, Pshuf(buf, inf),
+				\pan, Pwhite(-0.9, 0.9),
+				\out, Pseq([
+					(0!1),
+					(~reverbShortBus!3),
+					(~reverbMidBus!2),
+				],
+					rrand(4, 13)),
+				{
+					buf.do {
+						|b|
+						Buffer.free(b);
+						(b.asString + "freed ").postln;
+					}
+				}
+			)
+		).play
+	}
+
+	stateMachine {
+
+		|buf|
+
+		switch(state,
+
+			"sciarrino", {
+				this.sciarrinoPlayer(buf)
+			},
+
+			"machine", {
+				this.machinePlayer(buf)
+			},
+
+			"tech", {
+				this.techPlayer(buf)
+			},
+
+			"stretch", {
+				this.stretchPlayer(buf)
+			},
+			"halftime", {
+				this.halftimePlayer(buf)
+			}
+		);
+	}
+
+
 	msg_handler {
 		|msg, server|
 
 		var buf = List.new();
-
-		"msg received by handler".postln;
 
 		msg.postln;
 
@@ -273,15 +485,13 @@ Handler {
 
 			if (i < (msg.size - 1), {
 				b = Buffer.read(server, msg[i], action: {
-					"reading buffers".postln;
 					buf.add(b);
 					})
 				},
 				{
 				b = Buffer.read(server, msg[i], action: {
 					buf.add(b);
-					"buffers read".postln;
-					this.patternPlayer(buf);
+					this.stateMachine(buf);
 				});
 			});
 		};

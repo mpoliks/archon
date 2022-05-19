@@ -112,6 +112,7 @@ s.sync;
 ~fxGroup = Group.tail(s);
 ~dryOutputGroup = Group.tail(s);
 ~dsp = Analysis.new(~fr, ~netAddr);
+~handler = Handler.new;
 
 
 Synth(
@@ -138,7 +139,6 @@ Synth(
 		\out, 0
 	], ~fxGroup
 );
-
 
 ~reverbMidSynth = Synth(
 	\hdVerb, [
@@ -190,18 +190,26 @@ OSCdef(
 
 	|msg|
 
-	var thishandler;
-
-	"OK: Sending message to handler.".postln;
-	thishandler = Handler.new;
-
-	thishandler.msg_handler(msg[1..msg.size], s);
-
+	~handler.msg_handler(msg[1..msg.size], s);
 
 }, '/node');
 
+OSCdef(
+	\behaviorlistener, {
+
+	|msg|
+
+	msg.postln;
+
+}, '/behavior');
+
 "OK: Ready!".postln;
+
+//s.record(numChannels:2);
 
 }
 
 )
+
+
+~handler.switchstate("halftime")
