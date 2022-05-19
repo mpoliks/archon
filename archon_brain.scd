@@ -1,7 +1,7 @@
 (
 
 ~netAddr = NetAddr("127.0.0.1", 5005);
-("OK: Listening on " + NetAddr.langPort.asString + ".").postln;
+("OK: Listening on " + NetAddr.langPort.asString ++ ".").postln;
 
 ~hardwareInputs = 1;
 ~hardwareOutputs = 2;
@@ -38,6 +38,7 @@ SynthDef(\playback, {
 
 }).add;
 
+
 SynthDef(\audioIn, {
 
 	|out = 0,
@@ -48,6 +49,7 @@ SynthDef(\audioIn, {
 	Out.ar(out, micIn)
 
 }).add;
+
 
 SynthDef(\inputAnalysis, {
 
@@ -90,6 +92,7 @@ SynthDef(\hdVerb, {
 
 }).add;
 
+
 SynthDef(\freezeVerb, {
 	|in, out, predelay, decay, lpf|
 	var sig;
@@ -100,17 +103,63 @@ SynthDef(\freezeVerb, {
 
 }).add;
 
+
+SynthDef(\dryIO, {
+
+	|out = 0,
+	in = 0|
+
+	var sig = In.ar(in, 2);
+
+	sig = Compander.ar(sig,
+			sig,
+			thresh: 0.5,
+			slopeBelow: 1.0,
+			slopeAbove: 0.25,
+			clampTime: 0.01,
+			relaxTime: 0.09);
+
+	Out.ar(out, sig);
+
+}).add;
+
+
+SynthDef(\mixIO, {
+
+	|out = 0,
+	in = 0|
+
+	var sig = In.ar(in, 2);
+
+	sig = Compander.ar(sig,
+			sig,
+			thresh: 0.7,
+			slopeBelow: 1.0,
+			slopeAbove: 0.25,
+			clampTime: 0.01,
+			relaxTime: 0.01);
+
+	sig = Limiter.ar(sig,
+			level: 1.0,
+			dur: 0.1);
+
+	Out.ar(out, sig);
+
+}).add;
+
 s.sync;
 
 ~analysisBus = Bus.audio(s, 1);
 ~reverbShortBus = Bus.audio(s,2);
 ~reverbMidBus = Bus.audio(s,2);
 ~reverbLongBus = Bus.audio(s,2);
+~dryBus = Bus.audio(s, 1);
+~mixBus = Bus.audio(s, 1);
 
 ~inputGroup = Group.tail(s);
 ~analysisGroup = Group.tail(s);
 ~fxGroup = Group.tail(s);
-~dryOutputGroup = Group.tail(s);
+~mixGroup = Group.tail(s);
 ~dsp = Analysis.new(~fr, ~netAddr);
 ~handler = Handler.new;
 
@@ -136,7 +185,7 @@ Synth(
 		\predelay, 0.02,
 		\lpf1, 10000,
 		\lpf2, 14000,
-		\out, 0
+		\out, ~mixBus
 	], ~fxGroup
 );
 
@@ -147,10 +196,9 @@ Synth(
 		\predelay, 0.1,
 		\lpf1, 10000,
 		\lpf2, 14000,
-		\out, 0
+		\out, ~mixBus
 	], ~fxGroup
 );
-
 
 ~reverbLongSynth = Synth(
 	\freezeVerb, [
@@ -158,8 +206,22 @@ Synth(
 		\decay, 13,
 		\predelay, 1.0,
 		\lpf, 3000,
-		\out, 0
+		\out, ~mixBus
 	], ~fxGroup
+);
+
+~drySynth = Synth(
+	\dryIO, [
+		\in, ~dryBus,
+		\out, ~mixBus,
+	], ~fxGroup
+);
+
+~mixSynth = Synth(
+	\mixIO, [
+		\in, ~mixBus,
+		\out, 0
+	], ~mixGroup
 );
 
 s.sync;
