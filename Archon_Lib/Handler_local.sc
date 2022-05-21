@@ -1,6 +1,6 @@
 Handler {
 
-	var state = "halftime", weights, args;
+	var state = "halftime", args;
 
 
 	*new {
@@ -13,28 +13,13 @@ Handler {
 
 		"OK: Handler Initialized".postln;
 
-		weights = Dictionary[
-			\sc -> 0,
-			\ma -> 0,
-			\te -> 0,
-			\st -> 0,
-			\ht -> 0,
-			\gp -> 0
-		];
-
-		args = Dictionary[
-			\intensity -> 0,
-			\brightness -> 0,
-			\speed -> 0,
-			\periodicity -> 0,
-			\frequency -> 0
-		];
-
 	}
 
 	sciarrinoPlayer {
 
 		|buf|
+
+		// each player should also take ARGS, which are
 
 		Pdef(
 			\rhythm, Pkill(
