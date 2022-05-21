@@ -11,11 +11,7 @@ Analysis {
 	onsetTime,
 	offsetTime,
 
-	globals = Dictionary[
-		\degree_of_difference -> 0,
-		\number_of_samples -> 25,
-		\database -> 0.5
-	],
+	globals,
 
 	thresh = 0.01,
 	lPeak = 0.01,
@@ -35,6 +31,12 @@ Analysis {
 		sr = 1000 / r;
 
 		addr = netAddr;
+
+		globals = Dictionary[
+			\degree_of_difference -> 0,
+			\number_of_samples -> 25,
+			\database -> 0.5
+		];
 
 		"OK: Analysis Initialized".postln;
 

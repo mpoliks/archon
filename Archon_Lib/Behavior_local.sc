@@ -2,7 +2,7 @@ Behavior {
 
 	var eventCtr = 0,
 	eventTarget = 10,
-	dict,
+	means, weights, args,
 	onsetList, offsetList, centList,
 	rolloffList, flatList, rmsList,
 	pitchList;
@@ -23,10 +23,9 @@ Behavior {
 		flatList = List.new();
 		rmsList = List.new();
 		pitchList = List.new();
-		dict = Dictionary.new();
 		//eventTarget = rrand(1,10);
 
-		dict = Dictionary[
+		means = Dictionary[
 			\density -> 1.0,
 			\windowsize -> 1.0,
 			\mainpitch -> 'unpitched',
@@ -36,6 +35,24 @@ Behavior {
 			\avgflat -> 0.1,
 			\avgrms -> 0.2
 		];
+
+		weights = Dictionary[
+			\sc -> 0,
+			\ma -> 0,
+			\te -> 0,
+			\st -> 0,
+			\ht -> 0,
+			\gp -> 0
+		];
+
+		args = Dictionary[
+			\intensity -> 0,
+			\brightness -> 0,
+			\speed -> 0,
+			\periodicity -> 0,
+			\frequency -> 0
+		];
+
 	}
 
 	processDensity {
@@ -75,7 +92,9 @@ Behavior {
 
 	targetprocessing {
 
-		var thisDict = Dictionary [
+		// SETTING WEIGHTS
+
+		var theseMeans = Dictionary [
 			\density -> this.processDensity(),
 			\windowsize -> this.processWindow(),
 			\mainpitch -> this.processMainPitch(),
@@ -88,51 +107,91 @@ Behavior {
 			\avgrms -> rmsList.mean
 		].postln,
 
-		density_delta = (thisDict.at(\density) / dict.at(\density))
+		density_delta = (theseMeans.at(\density) / means.at(\density))
+			.linlin(0, 2.0, 100, -100, clip: nil),
+		windowsize_delta = (theseMeans.at(\windowsize) / means.at(\windowsize))
 			.linlin(0, 2.0, -100, 100, clip: nil),
-		windowsize_delta = (thisDict.at(\windowsize) / dict.at(\windowsize))
+		percpitch_delta = (theseMeans.at(\percpitch) / means.at(\percpitch))
 			.linlin(0, 2.0, -100, 100, clip: nil),
-		percpitch_delta = (thisDict.at(\percpitch) / dict.at(\percpitch))
+		avgcent_delta = (theseMeans.at(\avgcent) / means.at(\avgcent))
 			.linlin(0, 2.0, -100, 100, clip: nil),
-		avgcent_delta = (thisDict.at(\avgcent) / dict.at(\avgcent))
+		avgrolloff_delta = (theseMeans.at(\avgrolloff) / means.at(\avgrolloff))
 			.linlin(0, 2.0, -100, 100, clip: nil),
-		avgrolloff_delta = (thisDict.at(\avgrolloff) / dict.at(\avgrolloff))
+		avgflat_delta = (theseMeans.at(\avgflat) / means.at(\avgflat))
 			.linlin(0, 2.0, -100, 100, clip: nil),
-		avgflat_delta = (thisDict.at(\avgflat) / dict.at(\avgflat))
+		avgrms_delta = (theseMeans.at(\avgrms) / means.at(\avgrms))
 			.linlin(0, 2.0, -100, 100, clip: nil),
-		avgrms_delta = (thisDict.at(\avgrms) / dict.at(\avgrms))
-			.linlin(0, 2.0, -100, 100, clip: nil);
 
-		/*
+		w_sc = ((weights.at(\sc) * 100)
+		- (density_delta / 10)
+		- (windowsize_delta / 10)
+		+ (percpitch_delta / 10)
+		+ (avgflat_delta / 10)
+		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
 
-		TODO:
-		weights should be set by an algorithm that factors in each delta
-		density∆ * 150% should mean corresponding weights should increase by some fraction
-		let's say density∆ = 1.5, then
+		w_ma = ((weights.at(\ma) * 100)
+		+ (density_delta / 10)
+		+ (windowsize_delta / 10)
+		+ (avgcent_delta / 10)
+		+ (avgrolloff_delta / 10)
+		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
 
+		w_te = ((weights.at(\te) * 100)
+		+ (density_delta / 5)
+		- (windowsize_delta / 5)
+		+ (avgcent_delta / 10)
+		+ (avgrolloff_delta / 10)
+		+ (avgrms_delta / 10)
+		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
 
-		w_sc = (w_sc + (density∆ / 10) - windowsize
-		).linlin(0, 100, 0, 100, clip: 'minmax')
+		w_st = ((weights.at(\st) * 100)
+		- (density_delta / 5)
+		+ (windowsize_delta / 5)
+		- (percpitch_delta / 10)
+		- (avgcent_delta / 10)
+		- (avgrms_delta / 10)
+		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
+
+		w_ht = ((weights.at(\ht) * 100)
+		- (density_delta / 10)
+		+ (windowsize_delta / 10)
+		+ (percpitch_delta / 10)
+		+ (avgrolloff_delta / 10)
+		+ (avgflat_delta / 10)
+		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
+
+		w_gp = ((weights.at(\gp) * 100)
+		- (density_delta / 10)
+		+ (percpitch_delta / 5)
+		- (avgcent_delta / 10)
+		- (avgflat_delta / 10)
+		- (avgrms_delta / 10)
+		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
+
+		calib = [w_sc, w_ma, w_te, w_st, w_ht, w_gp],
+
+		recalib = Array.fill(
+						calib.size, {
+							|i|
+							calib[i] / calib.sum;
+					}),
+
+		theseWeights = Dictionary[
+			\sc -> recalib[0],
+			\ma -> recalib[1],
+			\te -> recalib[2],
+			\st -> recalib[3],
+			\ht -> recalib[4],
+			\gp -> recalib[5]
+		];
+
+		/* TODO: SET ARGS!!!!
 
 
 		*/
 
-		"density delta = ".postln;
-		density_delta.postln;
-		"windowsize delta = ".postln;
-		windowsize_delta.postln;
-		"percpitch delta =".postln;
-		percpitch_delta.postln;
-		"avgcent delta = ".postln;
-		avgcent_delta.postln;
-		"avgrolloff delta = ".postln;
-		avgrolloff_delta.postln;
-		"avgflat delta = ".postln;
-		avgflat_delta.postln;
-		"avgrms delta = ".postln;
-		avgrms_delta.postln;
-
-		dict = thisDict;
+		means = theseMeans;
+		weights = theseWeights;
 		eventTarget = eventCtr + rrand(1, 30);
 
 	}

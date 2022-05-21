@@ -1,22 +1,6 @@
 Handler {
 
-	var state = "halftime",
-	weights = Dictionary[
-		\sciarrino -> 0,
-		\machine -> 0,
-		\tech -> 0,
-		\stretch -> 0,
-		\halftime -> 0,
-		\gran -> 0
-	],
-	args = Dictionary[
-		\intensity -> 0,
-		\brightness -> 0,
-		\speed -> 0,
-		\periodicity -> 0,
-		\frequency -> 0
-
-	];
+	var state = "halftime", weights, args;
 
 
 	*new {
@@ -29,14 +13,22 @@ Handler {
 
 		"OK: Handler Initialized".postln;
 
-	}
+		weights = Dictionary[
+			\sc -> 0,
+			\ma -> 0,
+			\te -> 0,
+			\st -> 0,
+			\ht -> 0,
+			\gp -> 0
+		];
 
-	switchstate {
-
-		|setting1, setting2|
-
-		state = setting1;
-		intensity = setting2;
+		args = Dictionary[
+			\intensity -> 0,
+			\brightness -> 0,
+			\speed -> 0,
+			\periodicity -> 0,
+			\frequency -> 0
+		];
 
 	}
 
@@ -253,6 +245,7 @@ Handler {
 			"halftime", {
 				this.halftimePlayer(buf)
 			},
+
 			"granplay", {
 				this.granPlayer(buf)
 			}
