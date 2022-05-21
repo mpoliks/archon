@@ -43,6 +43,37 @@ SynthDef(\playback, {
 
 }).add;
 
+SynthDef(\playgran, {
+		|out,
+		gate = 1,
+		freq = 10,
+		amp = 1,
+		rate = 1.0,
+		sndbuf,
+		pan = 0,
+		envbuf|
+
+    var env, freqdev;
+
+    env = EnvGen.kr(
+        Env([0, 1, 0], [1, 1], \sin, 1),
+        gate,
+        levelScale: amp,
+        doneAction: Done.freeSelf);
+
+    Out.ar(out,
+        GrainBuf.ar(
+				2,
+				Impulse.kr(freq),
+				0.1,
+				sndbuf,
+				rate,
+				LFNoise2.kr(0.1).range(0, 1),
+				2,
+				(pan * LFNoise2.kr(0.1).range(-1, 1)),
+				envbuf) * env)
+}).add;
+
 SynthDef(\audioIn, {
 
 	|out = 0,
@@ -180,6 +211,7 @@ s.sync;
 ~mixGroup = Group.tail(s);
 ~dsp = Analysis.new(~fr, ~netAddr);
 ~handler = Handler.new;
+~behavior = Behavior.new();
 
 Synth(
 	\audioIn, [
@@ -238,6 +270,7 @@ Synth(
 		\in, ~mixBus,
 		\out, 0
 	], ~mixGroup
+
 );
 
 s.sync;
@@ -271,12 +304,13 @@ OSCdef(
 
 }, '/node');
 
+
 OSCdef(
 	\behaviorlistener, {
 
 	|msg|
 
-	msg.postln;
+	~behavior.receiver(msg);
 
 }, '/behavior');
 
@@ -288,5 +322,6 @@ OSCdef(
 
 )
 
+~behavior.get(onsetTime)
 
-~handler.switchstate("halftime")
+~handler.switchstate("granplay", 1.0)
