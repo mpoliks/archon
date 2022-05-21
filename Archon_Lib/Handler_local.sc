@@ -1,6 +1,6 @@
 Handler {
 
-	var state = "halftime", args;
+	var state = "sc", args;
 
 
 	*new {
@@ -13,13 +13,34 @@ Handler {
 
 		"OK: Handler Initialized".postln;
 
+		args = Dictionary[
+			\windowsize -> 0.4,
+			\percpitch -> 0.0,
+			\avgflat -> 0.09,
+			\density -> 1.5,
+			\avgcent -> 4906.16,
+			\avgrms -> 0.10,
+			\mainpitch -> 'unpitched',
+			\avgrolloff -> 43
+		];
+
+
+	}
+
+	settings {
+
+		|msg|
+
+		state = msg[0];
+		args = msg[1];
+
 	}
 
 	sciarrinoPlayer {
 
 		|buf|
 
-		// each player should also take ARGS, which are
+		// TODO, add arg mods to players
 
 		Pdef(
 			\rhythm, Pkill(
@@ -211,27 +232,27 @@ Handler {
 
 		switch(state,
 
-			"sciarrino", {
+			"sc", {
 				this.sciarrinoPlayer(buf)
 			},
 
-			"machine", {
+			"ma", {
 				this.machinePlayer(buf)
 			},
 
-			"tech", {
+			"te", {
 				this.techPlayer(buf)
 			},
 
-			"stretch", {
+			"st", {
 				this.stretchPlayer(buf)
 			},
 
-			"halftime", {
+			"ht", {
 				this.halftimePlayer(buf)
 			},
 
-			"granplay", {
+			"gp", {
 				this.granPlayer(buf)
 			}
 		);

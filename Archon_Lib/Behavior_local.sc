@@ -27,7 +27,7 @@ Behavior {
 		flatList = List.new();
 		rmsList = List.new();
 		pitchList = List.new();
-		//eventTarget = rrand(1,10);
+		eventTarget = rrand(1,10);
 
 		targets = [\sc, \ma, \te, \st, \ht, \hp];
 
@@ -217,6 +217,8 @@ Behavior {
 		means = theseMeans;
 		weights = theseWeights;
 
+		weights.postln;
+
 		eventTarget = eventCtr + rrand(1, 30);
 
 		^ thisTarget
@@ -286,22 +288,22 @@ Behavior {
 				prevTarget = target;
 				prevEvent = eventTarget;
 				target = this.targetprocessing();
+				("OK: Moving Toward" + target.asString + "!").postln;
 		});
 
 		if (eventCtr > 3,
 			{
-				returnArgs = runningArgs(3)
+				returnArgs = this.runningArgs(3)
 			},
 			{
-				runningArgs(1)
+				returnArgs = this.runningArgs(1)
 			}
 		);
 
 		eventCtr = eventCtr + 1;
 		eventCtr.postln;
 
-
-		^ [thisTarget, runningArgs(1)]
+		^ [selectTarget, returnArgs]
 
 
 	}

@@ -310,7 +310,7 @@ OSCdef(
 
 	|msg|
 
-	~behavior.receiver(msg);
+	~handler.settings(~behavior.receiver(msg));
 
 }, '/behavior');
 
@@ -321,7 +321,3 @@ OSCdef(
 }
 
 )
-
-~behavior.get(onsetTime)
-
-~handler.switchstate("granplay", 1.0)
