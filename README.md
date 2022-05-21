@@ -1,4 +1,5 @@
 # Archon 
+![Archon Flow](https://user-images.githubusercontent.com/29315147/169671284-69a5be7d-8212-43d4-bfd0-f12ef9069e3a.png)
 
 ## 1. Overview
 Archon is an audio data interface written in Python and Supercollider. It mediates between live sound and a feature-extracted audio dataset. Archon is in its early stages - at present, it can extract a base set of descriptors from a database (into JSON), quickly compute input audio against the dataset (via PyTorch), and deliver feature-matched or -excluded database audio into a buffer management system in Supercollider. Future work will significantly build out the Supercollider interface, and will also:
