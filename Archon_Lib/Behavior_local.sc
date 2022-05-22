@@ -1,22 +1,30 @@
+/*
+
+The Behavior Module generates playback machine targets based on performance changes.
+It operates based on a system of "events" corresponding to envelopes registered by the Analysis module.
+Events are measured against a "target", analysed for %∆ changes, and the results inform a series of weights used to probabilistically inform the next target selection.
+
+*/
+
+
 Behavior {
 
-	var eventCtr = 0,
-	eventTarget = 10,
-	prevEvent = 0,
-	prevTarget = \sc,
-	target = \sc,
-	targets,
-	means, weights, args,
-	onsetList, offsetList, centList,
-	rolloffList, flatList, rmsList,
-	pitchList;
+	var eventCtr = 0, // counts incoming events
+	eventTarget, // target event
+	prevEvent = 0, // used to store previous target
+	prevTarget = \sc, // previous playback machine
 
+	target = \sc, // current playback machine
+	targets, // dictionary of available playback machines
+	means, weights, // used to store analysis results to calculate %∆
+
+	onsetList, offsetList, centList, rolloffList, flatList, rmsList, pitchList;
+	// to keep long running totals of timing, spectral, and amplitude characteristics over time
 
 	*new {
 
         ^super.new.init()
 	}
-
 
 	init {
 
@@ -27,7 +35,8 @@ Behavior {
 		flatList = List.new();
 		rmsList = List.new();
 		pitchList = List.new();
-		eventTarget = rrand(1,10);
+
+		eventTarget = rrand(1,10); // setting first event target randomly
 
 		targets = [\sc, \ma, \te, \st, \ht, \hp];
 
@@ -51,17 +60,10 @@ Behavior {
 			\gp -> 0
 		];
 
-		args = Dictionary[
-			\intensity -> 0,
-			\brightness -> 0,
-			\speed -> 0,
-			\periodicity -> 0,
-			\frequency -> 0
-		];
-
 	}
 
 	processDensity {
+		// simple function to calculate event density from a collection of onsets
 
 		|onsets|
 
@@ -75,6 +77,7 @@ Behavior {
 	}
 
 	processWindow {
+		// simple function to calculate windowsize from a collection of onsets and offsets
 
 		|onsets, offsets|
 
@@ -87,7 +90,7 @@ Behavior {
 
 	}
 
-	processMainPitch {
+	processMainPitch { // simple function to calculate most common pitch
 
 		|pitches|
 
@@ -102,9 +105,7 @@ Behavior {
 		^ mainpitch
 	}
 
-	targetprocessing {
-
-		// SETTING WEIGHTS
+	targetprocessing { // calculate %∆s and set weights
 
 		var eventOffsets = offsetList[
 			(eventCtr - prevEvent)..],
@@ -121,7 +122,7 @@ Behavior {
 		eventRMS = rmsList[
 			(eventCtr - prevEvent)..],
 
-		theseMeans = Dictionary [
+		theseMeans = Dictionary [ // grabbing current means
 			\density -> this.processDensity(eventOnsets),
 			\windowsize -> this.processWindow(eventOnsets, eventOffsets),
 			\mainpitch -> this.processMainPitch(eventPitches),
@@ -134,6 +135,7 @@ Behavior {
 			\avgrms -> eventRMS.mean
 		],
 
+		// calculating deviation against previous means
 		density_delta = (theseMeans.at(\density) / means.at(\density))
 			.linlin(0, 2.0, 100, -100, clip: nil),
 		windowsize_delta = (theseMeans.at(\windowsize) / means.at(\windowsize))
@@ -149,6 +151,7 @@ Behavior {
 		avgrms_delta = (theseMeans.at(\avgrms) / means.at(\avgrms))
 			.linlin(0, 2.0, -100, 100, clip: nil),
 
+		//setting weights by playback machine
 		w_sc = ((weights.at(\sc) * 100)
 		- (density_delta / 10)
 		- (windowsize_delta / 10)
@@ -195,6 +198,7 @@ Behavior {
 		- (avgrms_delta / 10)
 		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
 
+		// setting target
 		calib = [w_sc, w_ma, w_te, w_st, w_ht, w_gp],
 
 		recalib = Array.fill(
@@ -205,6 +209,7 @@ Behavior {
 
 		thisTarget = targets[recalib.windex],
 
+		// resetting current means and weights
 		theseWeights = Dictionary[
 			\sc -> recalib[0],
 			\ma -> recalib[1],
@@ -217,15 +222,14 @@ Behavior {
 		means = theseMeans;
 		weights = theseWeights;
 
-		weights.postln;
-
 		eventTarget = eventCtr + rrand(1, 30);
 
-		^ thisTarget
+		^ thisTarget // return target
 
 	}
 
 	runningArgs {
+		// used to smooth incoming descriptors from the Analysis module to return as playback machine args
 
 		|dist|
 
@@ -261,8 +265,7 @@ Behavior {
 
 	}
 
-
-	receiver {
+	receiver { // osc client
 
 		|args|
 
@@ -283,7 +286,7 @@ Behavior {
 		rmsList.add(args[6]);
 		pitchList.add(args[7]);
 
-		if (eventCtr > eventTarget,
+		if (eventCtr > eventTarget, // playback machine target selection
 			{
 				prevTarget = target;
 				prevEvent = eventTarget;
@@ -291,7 +294,7 @@ Behavior {
 				("OK: Moving Toward" + target.asString + "!").postln;
 		});
 
-		if (eventCtr > 3,
+		if (eventCtr > 3, // playback machine args generation
 			{
 				returnArgs = this.runningArgs(3)
 			},
@@ -301,7 +304,6 @@ Behavior {
 		);
 
 		eventCtr = eventCtr + 1;
-		eventCtr.postln;
 
 		^ [selectTarget, returnArgs]
 

@@ -1,12 +1,24 @@
+/*
+
+The Brain is just a connection to the audio server and an OSC switchboard.
+This is the file you need to run.
+If you see errors, make sure you've moved the library folder to the extensions folder, eg.
+'/Library/Application Support/SuperCollider/Extensions'.
+
+*/
+
+
 (
 
-~netAddr = NetAddr("127.0.0.1", 5005);
+~netAddr = NetAddr("127.0.0.1", 5005); // Python address
 ("OK: Listening on " + NetAddr.langPort.asString ++ ".").postln;
+// This is what SC is listening on, if you don't hear back from Python, make sure Python is listening on this port.
 
-~hardwareInputs = 1;
-~hardwareOutputs = 2;
-~fr = 10;
+~hardwareInputs = 1; // number of mics connected
+~hardwareOutputs = 2; // number of hardware outputs - right now this is configured for stereo
+~fr = 10; // how frequently to sample input for descriptors
 
+// server settings, don't mess with these:
 ServerOptions.devices;
 Server.default.options.numInputBusChannels = ~hardwareInputs;
 Server.default.options.numOutputBusChannels = ~hardwareOutputs;
@@ -14,9 +26,9 @@ s.options;
 s.reboot;
 s.meter;
 
-s.waitForBoot {
+s.waitForBoot { // waits for server to boot to start defining server objects
 
-SynthDef(\playback, {
+SynthDef(\playback, { // playback synth
 	|rate = 1,
 	atk = 0.1,
 	rel = 0.4,
@@ -43,7 +55,7 @@ SynthDef(\playback, {
 
 }).add;
 
-SynthDef(\playgran, {
+SynthDef(\playgran, { // granular synth
 		|out,
 		gate = 1,
 		freq = 10,
@@ -74,7 +86,7 @@ SynthDef(\playgran, {
 				envbuf) * env)
 }).add;
 
-SynthDef(\audioIn, {
+SynthDef(\audioIn, { // simple patchcord
 
 	|out = 0,
 	in = 0|
@@ -85,7 +97,7 @@ SynthDef(\audioIn, {
 
 }).add;
 
-SynthDef(\inputAnalysis, {
+SynthDef(\inputAnalysis, { // analysis synth
 
 	|in = 0|
 
@@ -113,7 +125,7 @@ SynthDef(\inputAnalysis, {
 
 }).add;
 
-SynthDef(\hdVerb, {
+SynthDef(\hdVerb, { // nice sounding SC reverb
 	|in, out, predelay, decay, lpf1, lpf2|
 	var sig;
 
@@ -134,7 +146,7 @@ SynthDef(\hdVerb, {
 
 }).add;
 
-SynthDef(\freezeVerb, {
+SynthDef(\freezeVerb, { // freeze reverb
 	|in, out, predelay, decay, lpf|
 	var sig;
 
@@ -154,7 +166,7 @@ SynthDef(\freezeVerb, {
 
 }).add;
 
-SynthDef(\dryIO, {
+SynthDef(\dryIO, { // compressor on the dry bus
 
 	|out = 0,
 	in = 0|
@@ -173,7 +185,7 @@ SynthDef(\dryIO, {
 
 }).add;
 
-SynthDef(\mixIO, {
+SynthDef(\mixIO, { // compressor and limiter on the mix bus
 
 	|out = 0,
 	in = 0|
@@ -199,6 +211,7 @@ SynthDef(\mixIO, {
 s.sync;
 
 ~analysisBus = Bus.audio(s, 1);
+// bus for analysis - if we're doing stereo inputs need to change this
 ~reverbShortBus = Bus.audio(s,2);
 ~reverbMidBus = Bus.audio(s,2);
 ~reverbLongBus = Bus.audio(s,2);
@@ -209,9 +222,11 @@ s.sync;
 ~analysisGroup = Group.tail(s);
 ~fxGroup = Group.tail(s);
 ~mixGroup = Group.tail(s);
-~dsp = Analysis.new(~fr, ~netAddr);
-~handler = Handler.new;
-~behavior = Behavior.new();
+// sets sequence for buses
+
+~dsp = Analysis.new(~fr, ~netAddr); // initiate Analysis module
+~handler = Handler.new; // initialize Handler module
+~behavior = Behavior.new(); // initialize Behavior module
 
 Synth(
 	\audioIn, [
@@ -280,7 +295,7 @@ OSCdef(
 
 	|msg|
 
-	~dsp.envDetect(msg);
+	~dsp.envDetect(msg); // sends analysis to the Analysis module
 
 }, '/analysis');
 
@@ -290,7 +305,7 @@ OSCdef(
 
 	|msg|
 
-	"OK: ACK from Python".postln;
+	"OK: ACK from Python".postln; // just waits for Python acknowledgement
 
 }, '/superInterface');
 
@@ -300,7 +315,7 @@ OSCdef(
 
 	|msg|
 
-	~handler.msg_handler(msg[1..msg.size], s);
+	~handler.msg_handler(msg[1..msg.size], s); // sends Python output to Handler module
 
 }, '/node');
 
@@ -310,13 +325,13 @@ OSCdef(
 
 	|msg|
 
-	~handler.settings(~behavior.receiver(msg));
+	~handler.settings(~behavior.receiver(msg)); // sets Handler settings with the Behavior module
 
 }, '/behavior');
 
 "OK: Ready!".postln;
 
-//s.record(numChannels:2);
+//s.record(numChannels:2); // optional to record output
 
 }
 

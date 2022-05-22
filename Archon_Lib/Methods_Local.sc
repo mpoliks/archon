@@ -23,11 +23,59 @@
 		},
 		{
 			pitch = ref[(midi - 21) % 12];
-			oct = (((midi - 21) / 12).asInteger + 1).asString;
+			oct = (((midi - 21) / 12).asInteger).asString;
 			pitch = pitch ++ oct;
 		});
 
 		^pitch;
+
+	}
+
+}
+
++ String {
+
+	pitchcps {
+
+		var pitch = this, midi, freq, oct,
+
+		ref = [
+			"A",
+			"A#",
+			"B",
+			"C",
+			"C#",
+			"D",
+			"D#",
+			"E",
+			"F",
+			"F#",
+			"G",
+			"G#",
+		];
+
+		if (pitch == "unpitched",
+			{
+				freq = 0;
+			},
+			{
+				oct = pitch[(pitch.size - 1)..];
+				oct.postln;
+				pitch = pitch.replace(oct);
+				ref.size.do {
+					|i|
+					if (pitch == ref[i],
+						{
+							midi = (i + 21) + (12 * oct.asInteger);
+							i.postln;
+							ref[i].postln;
+							midi.postln;
+							freq = midi.midicps;
+					});
+				};
+		});
+
+		^ freq;
 
 	}
 
@@ -65,5 +113,5 @@
 
 		^ str;
 	}
-}
 
+}
