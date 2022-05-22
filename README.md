@@ -2,9 +2,9 @@
 ![Archon Flow](https://user-images.githubusercontent.com/29315147/169671284-69a5be7d-8212-43d4-bfd0-f12ef9069e3a.png)
 
 ## 1. Overview
-Archon is an open-source interface designed for Demiurge, a generative performance ecosystem powered by machine learning. It can be used with any database of lossless audio stored on Google Drive.
+Archon is an open-source interface designed for Demiurge, a generative performance ecosystem powered by machine learning (developed in collaboration with [Roberto Alonso Trillo](https://robertoalonsotrillo.com/projects/)). It can be used with any database of lossless audio stored on Google Drive.
 
-Demiurge and Archon were built with the belief that the music of the future will take post-work as a point of departure, supplanting instruments with style transfer, sample library generation, and pattern proliferation, replacing the studio itself with readymade conformity-driven operations. Musical activities will consist of higher-level curatorial actions at the level of genre or mood or intensity. In liberating music from musicians, one both liberates its future from anthropocentric bias and accelerates its death-drive. Demiurge and Archon go nowhere near accomplishing this vision, but are committed to it nonetheless.
+Demiurge and Archon were built with the belief that the music of the future will take post-work as a point of departure, supplanting instruments with style transfer, sample library generation, and pattern proliferation, replacing the studio itself with readymade conformity-driven operations. Musical activities will consist of higher-level curatorial actions at the level of genre or mood or intensity. In liberating music from musicians, one both liberates its future from anthropocentric bias and accelerates its death-drive. [Demiurge](www.marekpoliks.com/demiurge), [Hydra](www.marekpoliks.com/hydra), and [Archon](www.marekpoliks.com/archon) go nowhere near accomplishing this vision, but are nevertheless committed to its realization.
 
 Archon is written in Python and Supercollider, and will be developed over the course of 2022. Its function is to mediate between human and database, a neglected instrumentality. Unlike existing work in concatenative synthesis, Archon is both realtime (GPU accelerated) and behaviorally adaptive to audio signal. 
 
