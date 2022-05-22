@@ -42,6 +42,7 @@ def process_input(input_dict):
     return pitch, in_t
 
 # use pytorch to find min. minkowski distance between input and db, return 25 closest matches
+# note cuda is not enabled here yet (this is being tested on a 2015 macbook pro with only about 100 ms latency)
 def closest_node(input_dataframe, database_dataframe, database_tensors, audiodir):
     pitch, input_tensor = process_input(input_dataframe)
     if pitch not in database_dataframe: pitch = "unpitched"

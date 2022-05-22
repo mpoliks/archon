@@ -2,11 +2,13 @@
 ![Archon Flow](https://user-images.githubusercontent.com/29315147/169671284-69a5be7d-8212-43d4-bfd0-f12ef9069e3a.png)
 
 ## 1. Overview
-Archon is an audio data interface written in Python and Supercollider. It mediates between live sound and a feature-extracted audio dataset. Archon is in its early stages - at present, it can extract a base set of descriptors from a database (into JSON), quickly compute input audio against the dataset (via PyTorch), and deliver feature-matched or -excluded database audio into a buffer management system in Supercollider. Future work will significantly build out the Supercollider interface, and will also:
-a. Use expanded feature set (MFCCs) 
-b. Allow for GPU computation where available 
-c. Allow for local extraction and processing (currently using GDrive and Google Colab, which is convenient for collaboration but has many problems in practice)
-d.  Coalesce into a complete performance instrument
+Archon is an open-source interface designed for Demiurge, a generative performance ecosystem powered by machine learning. It can be used with any database of lossless audio stored on Google Drive.
+
+Demiurge and Archon were built with the belief that the music of the future will take post-work as a point of departure, supplanting instruments with style transfer, sample library generation, and pattern generation, and replacing the studio itself with readymade conformity-driven operations. Musical activities will consist of higher-level actions at the level of genre or mood or intensity. In liberating music from musicians, one both liberates its future from anthropocentric bias and accelerates its death-drive. Demiurge and Archon go nowhere near accomplishing this vision, but are committed to it nonetheless.
+
+Archon is written in Python and Supercollider, and will be developed over the course of 2022. Its function is to mediate between human and database, a neglected instrumentality. Unlike existing work in concatenative synthesis, Archon is both realtime (GPU accelerated) and behaviorally adaptive to audio signal over time. 
+
+At present, Archon is ready for v0 testing - play around with database consolidation, descriptor extraction, and live feature matching. Archon will adapt database playback machine morphology over time based on probabilistic responses to live input and is highly reactive to performance.
 
 ## 2. Extraction
 The '/utilities' folder has many scripts that can be useful to prepare your audio database, from any accessible directory within GDrive. 
@@ -18,7 +20,7 @@ c. `archon_post_processing.ipynb` gives you some insights into your data - histo
 The recommended flow is to use the split and analyze scripts to diffract an existing database into many grains, analyze them, sort them, download them, and also download the analysis file (a JSON file) and place it in the directory you cloned this one into. (There's a sample JSON file in this repo, but only just to compare file structure - it won't help you unless you have the files :p). 
 
 ## 3. Supercollider Interface 
-Once you've downloaded your audio, your analysis file, and this repo, move the three extensions files (ending in .sc - 'archon_classes_local', 'archon_methods_local', `archon_synths_local`) to your Supercollider Extensions directory (`/Library/Application Support/Supercollider/Extensions`). This is an unfortunate requirement of working tidily with Supercollider. Then open up Supercollider, which will auto-compile the class library. Hopefully you will see no errors.
+Once you've downloaded your audio, your analysis file, and this repo, move the library directory to your Supercollider Extensions directory (`/Library/Application Support/Supercollider/Extensions`). Then open up Supercollider, which will auto-compile the class library. 
 
 Then poke around `archon_query.py` to get a sense of the arguments available to you, including specifying the location of the analysis file and your audio sample directory. The ports here are auto-specified to work with Supercollider, but if you see a mismatch when you boot `archon_brain.scd` you can easily make an adjustment by passing the `--output_port` argument with the relevant port that SC prints out for you.
 
