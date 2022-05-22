@@ -4,11 +4,13 @@
 ## 1. Overview
 Archon is an open-source interface designed for Demiurge, a generative performance ecosystem powered by machine learning. It can be used with any database of lossless audio stored on Google Drive.
 
-Demiurge and Archon were built with the belief that the music of the future will take post-work as a point of departure, supplanting instruments with style transfer, sample library generation, and pattern generation, and replacing the studio itself with readymade conformity-driven operations. Musical activities will consist of higher-level actions at the level of genre or mood or intensity. In liberating music from musicians, one both liberates its future from anthropocentric bias and accelerates its death-drive. Demiurge and Archon go nowhere near accomplishing this vision, but are committed to it nonetheless.
+Demiurge and Archon were built with the belief that the music of the future will take post-work as a point of departure, supplanting instruments with style transfer, sample library generation, and pattern proliferation, replacing the studio itself with readymade conformity-driven operations. Musical activities will consist of higher-level curatorial actions at the level of genre or mood or intensity. In liberating music from musicians, one both liberates its future from anthropocentric bias and accelerates its death-drive. Demiurge and Archon go nowhere near accomplishing this vision, but are committed to it nonetheless.
 
-Archon is written in Python and Supercollider, and will be developed over the course of 2022. Its function is to mediate between human and database, a neglected instrumentality. Unlike existing work in concatenative synthesis, Archon is both realtime (GPU accelerated) and behaviorally adaptive to audio signal over time. 
+Archon is written in Python and Supercollider, and will be developed over the course of 2022. Its function is to mediate between human and database, a neglected instrumentality. Unlike existing work in concatenative synthesis, Archon is both realtime (GPU accelerated) and behaviorally adaptive to audio signal. 
 
 At present, Archon is ready for v0 testing - play around with database consolidation, descriptor extraction, and live feature matching. Archon will adapt database playback machine morphology over time based on probabilistic responses to live input and is highly reactive to performance.
+
+![1C72CCFA-BA42-4AA9-8B52-004A18D58180](https://user-images.githubusercontent.com/29315147/169711042-dc4a23f0-89e6-4b52-8819-f86086409b9f.JPG)
 
 ## 2. Extraction
 The '/utilities' folder has many scripts that can be useful to prepare your audio database, from any accessible directory within GDrive. 
@@ -17,7 +19,7 @@ a. `archon_split.ipynb` is a Colab notebook that grabs audio from walking throug
 b. `archon_analyze.ipynb` has two components. First, a script that extracts median descriptors across the length of each sample (this will ultimately be developed for greater granularity, but for short splices like 500ms it works great). Second, there's an optional script that reorganizes the target directory by descriptor. This is definitely optional, but dealing with GDrive downloading can be a headache without this. (I don't recommend using Google Takeout, which can compromise filenames and do weird things to you data, and instead break up your directories and download them independently with a separate script). There's an unsort argument here you can use to collapse everything back into the original flat directory structure.
 c. `archon_post_processing.ipynb` gives you some insights into your data - histograms collected against each major descriptor type (showing pitched data only, unpitched data only, or both for maximum visibility into the contents of your workspace).
 
-The recommended flow is to use the split and analyze scripts to diffract an existing database into many grains, analyze them, sort them, download them, and also download the analysis file (a JSON file) and place it in the directory you cloned this one into. (There's a sample JSON file in this repo, but only just to compare file structure - it won't help you unless you have the files :p). 
+The recommended flow is to use the split and analyze scripts to diffract an existing database into many grains, analyze them, sort them, download them, and also download the analysis file (a JSON file) and place it in the directory you cloned this one into.
 
 ## 3. Supercollider Interface 
 Once you've downloaded your audio, your analysis file, and this repo, move the library directory to your Supercollider Extensions directory (`/Library/Application Support/Supercollider/Extensions`). Then open up Supercollider, which will auto-compile the class library. 
