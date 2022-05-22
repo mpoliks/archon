@@ -106,7 +106,7 @@ SynthDef(\inputAnalysis, { // analysis synth
 	amp = RMS.ar(input),
 	freq = Pitch.kr(input),
 	chain = FFT(LocalBuf(2048), input),
-    centroid = SpecCentroid.kr(chain),
+	centroid = SpecCentroid.kr(chain),
 	flat = SpecFlatness.kr(chain),
 	rolloff = SpecPcile.kr(chain, 0.5),
 	trig = Impulse.kr(~fr);
