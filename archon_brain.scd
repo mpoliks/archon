@@ -305,7 +305,7 @@ OSCdef(
 
 	|msg|
 
-	"OK: ACK from Python".postln; // just waits for Python acknowledgement
+	msg[1].postln; // just waits for Python acknowledgement
 
 }, '/superInterface');
 

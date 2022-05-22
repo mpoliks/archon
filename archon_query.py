@@ -92,7 +92,7 @@ def osc_handler(unused_addr, constants, args):
 
 if __name__ == "__main__":
 
-    # IMPORTANT: please read for information around file locations as yours will defer
+    # IMPORTANT: please read for information around file locations as yours will differ
     parser = argparse.ArgumentParser()
     parser.add_argument("--ip",
         default="127.0.0.1", help="The ip to listen on")
@@ -108,7 +108,7 @@ if __name__ == "__main__":
 
     # sets up Supercollider client and test message, if you don't see one in SC, start investigating
     client = SimpleUDPClient(args.ip, args.out_port)
-    client.send_message("/superInterface", "Testing Connection w/ Supercollider")
+    client.send_message("/superInterface", "ACK: Testing Connection w/ Python Server, Hold for OK")
 
     # load up existing database and convert to tensors
     print("OK: loading database... this can take a minute if the database is huge!")
@@ -124,4 +124,5 @@ if __name__ == "__main__":
     server = osc_server.ThreadingOSCUDPServer(
         (args.ip, args.in_port), dispatcher)
     print("Serving on {}".format(server.server_address))
+    client.send_message("/superInterface", "OK: Python Server is Ready!")
     server.serve_forever()

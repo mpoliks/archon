@@ -10,7 +10,7 @@ The Handler is a sequencer that takes several inputs:
 
 Handler {
 
-	var state = "sc", // playback machine
+	var state = \sc, // playback machine
 	args; // live features
 
 	*new {
@@ -50,7 +50,7 @@ Handler {
 		|buf|
 
 		var dur = args.at(\windowsize).linlin(0, 5, 0, 5, clip: \minmax),
-		bright = args.at(\avgrolloff).linlin(0, 12000, 0, 5, clin: \minmax),
+		bright = args.at(\avgrolloff).linlin(0, 12000, 0, 5, clip: \minmax),
 		width = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 1.0, clip: \minmax),
 		resonant = args.at(\percpitch).linlin(0.0, 1.0, 1, 4, clip: \minmax),
 		noise = args.at(\avgflat).linlin(0.0, 0.1, 1, 3, clip:\minmax),
@@ -95,7 +95,6 @@ Handler {
 					buf.do {
 						|b|
 						Buffer.free(b);
-						(b.asString + "freed ").postln;
 					}
 				}
 
@@ -110,7 +109,7 @@ Handler {
 		var dur = args.at(\density).linlin(0.0, 5.0, 0.0, 5.0, clip: \minmax),
 		variance = args.at(\windowsize).linlin(0.0, 3.0, 0.0, 0.3, clip: \minmax),
 		rates = [0.25, 0.5, 1, 2.0, 4.0],
-		bright = args.at(\avgrolloff).linlin(0, 12000, 0, 4, clin: \minmax),
+		bright = args.at(\avgrolloff).linlin(0, 12000, 0, 4, clip: \minmax),
 		width = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 1.0, clip: \minmax),
 		resonant = args.at(\percpitch).linlin(0.0, 1.0, 7, 2, clip: \minmax),
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax);
@@ -145,7 +144,6 @@ Handler {
 					buf.do {
 						|b|
 						Buffer.free(b);
-						(b.asString + "freed ").postln;
 					}
 				}
 
@@ -159,7 +157,7 @@ Handler {
 
 		var temp = args.at(\density).linlin(0.0, 5.0, 0.0, 1.0, clip: \minmax),
 		variance = args.at(\windowsize).linlin(0.0, 3.0, 0.0, 0.3, clip: \minmax),
-		bright = args.at(\avgrolloff).linlin(0, 12000, 0.1, 0.01, clin: \minmax),
+		bright = args.at(\avgrolloff).linlin(0, 12000, 0.1, 0.01, clip: \minmax),
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 1.0, 4.0, clip: \minmax),
 		noise = args.at(\avgflat).linlin(0.0, 0.1, 1, 3, clip:\minmax);
 
@@ -206,7 +204,6 @@ Handler {
 					buf.do {
 						|b|
 						Buffer.free(b);
-						(b.asString + "freed ").postln;
 					}
 				}
 
@@ -254,7 +251,6 @@ Handler {
 					buf.do {
 						|b|
 						Buffer.free(b);
-						(b.asString + "freed ").postln;
 					}
 				}
 
@@ -268,7 +264,7 @@ Handler {
 
 		var freq = args.at(\mainpitch).pitchcps.linlin(0, 10000, 2, 0.01, clip: \mixmax),
 		resonant = args.at(\percpitch).linlin(0.0, 1.0, 7, 2, clip: \minmax),
-		bright = args.at(\avgrolloff).linlin(0, 12000, 1, 5, clin: \minmax),
+		bright = args.at(\avgrolloff).linlin(0, 12000, 1, 5, clip: \minmax),
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 1.0, 3.0, clip: \minmax);
 
 		Pdef(
@@ -303,7 +299,6 @@ Handler {
 					buf.do {
 						|b|
 						Buffer.free(b);
-						(b.asString + "freed ").postln;
 					}
 				}
 
@@ -353,7 +348,6 @@ Handler {
 					buf.do {
 						|b|
 						Buffer.free(b);
-						(b.asString + "freed ").postln;
 					}
 				}
 
@@ -367,27 +361,27 @@ Handler {
 
 		switch(state,
 
-			"sc", {
+			\sc, {
 				this.sciarrinoPlayer(buf)
 			},
 
-			"ma", {
+			\ma, {
 				this.machinePlayer(buf)
 			},
 
-			"te", {
+			\te, {
 				this.techPlayer(buf)
 			},
 
-			"st", {
+			\st, {
 				this.stretchPlayer(buf)
 			},
 
-			"ht", {
+			\ht, {
 				this.halftimePlayer(buf)
 			},
 
-			"gp", {
+			\gp, {
 				this.granPlayer(buf)
 			}
 		);
