@@ -49,9 +49,10 @@ Handler {
 
 		|buf|
 
-		var dur = args.at(\windowsize).linlin(0, 5, 0, 5, clip: \minmax),
+		var dur = args.at(\windowsize).linlin(0, 5, 1, 5, clip: \minmax),
+		dense = args.at(\density).linlin(0, 5, 1, 5, clip: \minmax),
 		bright = args.at(\avgrolloff).linlin(0, 12000, 0, 5, clip: \minmax),
-		width = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 1.0, clip: \minmax),
+		width = args.at(\avgrms).linlin(0.0, 1.0, 0.3, 1.0, clip: \minmax),
 		resonant = args.at(\percpitch).linlin(0.0, 1.0, 1, 4, clip: \minmax),
 		noise = args.at(\avgflat).linlin(0.0, 0.1, 1, 3, clip:\minmax),
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax);
@@ -65,29 +66,33 @@ Handler {
 				\env, 1,
 
 				\dur, Pseq([
-					Pwhite(0.05, 0.2, dur),
-					Pwhite(0.01, 0.02, dur + 1),
-					Pwhite(0.4, 1.2, dur)
+					Pwhite(0.05, 0.2 * dur, (dur + 2).asInteger),
+					Pwhite(0.01, 0.02 * dur, (dur + 2).asInteger),
+					Pwhite(0.4, 1.2, (dur + 2).asInteger)
 				], 1),
+
+				\atk, Pwhite(width / 20, width / 10),
+
+				\rel, Pwhite(dur / 10, dur / 5),
 
 				\rate, Pseq(
 					[1.0]++
-					(2.0!(bright.asInteger))++
+					(2.0!(dense.asInteger))++
 					(0.5!(noise.asInteger))++
-					(1.0!(bright.asInteger))++
-					(2.0!((bright/2).asInteger)),
+					(1.0!(dense.asInteger * 2))++
+					(2.0!((dense/2).asInteger)),
 					1),
 
 				\buf, Pshuf(buf, inf),
 
 				\pan, Pwhite(-1 * width, width),
 
-				\amp, Pwhite(velocity / 2 , velocity),
+				\amp, Pwhite(0.1, 0.2),
 
 				\out, Pseq([
 					(~drybus!(bright.asInteger)),
 					(~reverbShortBus!4),
-					(~reverbLongBus!((resonant / 2).asInteger)),
+					(~reverbLongBus!(resonant.asInteger)),
 					(~drybus!1),
 					(~reverbMidBus!(resonant.asInteger))], inf),
 
@@ -106,9 +111,8 @@ Handler {
 
 		|buf|
 
-		var dur = args.at(\density).linlin(0.0, 5.0, 0.0, 5.0, clip: \minmax),
-		variance = args.at(\windowsize).linlin(0.0, 3.0, 0.0, 0.3, clip: \minmax),
-		rates = [0.25, 0.5, 1, 2.0, 4.0],
+		var dur = args.at(\density).linlin(0.0, 5.0, 0.2, 1.0, clip: \minmax),
+		variance = args.at(\windowsize).linlin(0.0, 3.0, 0.1, 0.3, clip: \minmax),
 		bright = args.at(\avgrolloff).linlin(0, 12000, 0, 4, clip: \minmax),
 		width = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 1.0, clip: \minmax),
 		resonant = args.at(\percpitch).linlin(0.0, 1.0, 7, 2, clip: \minmax),
@@ -122,23 +126,26 @@ Handler {
 
 				\env, 1,
 
-				\dur, Pwhite(dur / 2, (dur / 2) + variance),
+				\dur, Pwrand(
+						[(dur / 32), (dur / 8), (dur / 16), (dur /64), (dur / 32)],
+						[16, 1, 1, 2, 1].normalizeSum,
+					inf),
 
-				\rate, rates[bright.asInteger],
+				\rate, Pwrand(
+					[0.5, 1, 2.0, -1],
+					[2, 6, 2, 6].normalizeSum,
+					inf),
 
-				\rel, variance,
+				\buf, Pshuf(buf, inf, inf),
 
-				\buf, Pshuf(buf, inf),
+				\pan, Pwhite(-1, 1, inf),
 
-				\pan, Pwhite(-1 * width, width),
-
-				\amp, Pwhite(velocity / 2 , velocity),
+				\amp, Pbrown(0.2, 0.1, 0.125, inf),
 
 				\out, Pseq([
-					(~dryBus!(resonant.asInteger)),
-					(~reverbShortBus!((width * 3).asInteger))
-					],
-				(dur * 10).asInteger),
+					(~reverbShortBus!((bright + 1).asInteger)),
+					(~dryBus!(3))
+					], (100 * dur).asInteger),
 
 				{
 					buf.do {
@@ -155,7 +162,7 @@ Handler {
 
 		|buf|
 
-		var temp = args.at(\density).linlin(0.0, 5.0, 0.0, 1.0, clip: \minmax),
+		var temp = args.at(\density).linlin(0.0, 5.0, 0.0, 0.2, clip: \minmax),
 		variance = args.at(\windowsize).linlin(0.0, 3.0, 0.0, 0.3, clip: \minmax),
 		bright = args.at(\avgrolloff).linlin(0, 12000, 0.1, 0.01, clip: \minmax),
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 1.0, 4.0, clip: \minmax),
@@ -185,20 +192,16 @@ Handler {
 					1, (velocity.asInteger))
 				),
 
-				\atk, Pwhite(bright / 10, bright),
-
-				\rel, Pwhite(variance / 2, variance),
-
 				\buf, Pshuf(buf, inf),
 
-				\pan, Pwhite(-1 * variance, variance),
+				\pan, Pwhite(-1, 1),
 
-				\amp, Pwhite(velocity / 10 , velocity / 5),
+				\amp, Pwhite(0.1, 0.2),
 
 				\out, Pseq([
 					(~dryBus!3),
 					(~reverbShortBus!(noise.asInteger))
-				], (variance * 20).asInteger),
+				], (20).asInteger),
 
 				{
 					buf.do {
@@ -218,7 +221,10 @@ Handler {
 		var rates = [0.125, 0.25, 0.5],
 		bright = args.at(\avgrolloff).linlin(500, 12000, 0, 2, clip: \minmax),
 		rate = rates[bright.asInteger],
-		freq = args.at(\mainpitch).pitchcps.linlin(0, 10000, 0, 10, clip: \mixmax),
+		freq = args.at(\mainpitch)
+			.asString
+			.pitchcps
+			.linlin(0, 10000, 0, 10, clip: \mixmax),
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax);
 
 
@@ -262,7 +268,10 @@ Handler {
 
 		|buf|
 
-		var freq = args.at(\mainpitch).pitchcps.linlin(0, 10000, 2, 0.01, clip: \mixmax),
+		var freq = args.at(\mainpitch)
+			.asString
+			.pitchcps
+			.linlin(0, 10000, 2, 0.01, clip: \mixmax),
 		resonant = args.at(\percpitch).linlin(0.0, 1.0, 7, 2, clip: \minmax),
 		bright = args.at(\avgrolloff).linlin(0, 12000, 1, 5, clip: \minmax),
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 1.0, 3.0, clip: \minmax);
@@ -274,7 +283,7 @@ Handler {
 
 				\env, 1,
 
-				\dur, Pwhite(0.01, freq * velocity),
+				\dur, Pwhite(0.01, 0.1),
 
 				\rate, Pseq([
 					(0.5!3),
@@ -293,7 +302,7 @@ Handler {
 					(~drybus!(resonant.asInteger)),
 					(~reverbShortBus!(resonant.asInteger)),
 					(~reverbMidBus!2),
-				], rrand(4, (velocity * 5).asInteger)),
+				], rrand(4, (velocity * 20).asInteger)),
 
 				{
 					buf.do {
@@ -310,11 +319,20 @@ Handler {
 
 		|buf|
 
-		var freq = args.at(\mainpitch).pitchcps.linlin(0, 10000, 0, 10000, clip: \mixmax),
+		var freq = args.at(\mainpitch)
+			.asString
+			.pitchcps
+			.linlin(0, 10000, 0, 10000, clip: \mixmax),
 		resonant = args.at(\percpitch).linlin(0.0, 1.0, 1, 4, clip: \minmax),
 		variance = args.at(\windowsize).linlin(0.0, 3.0, 1.0, 10.0, clip: \minmax),
 		dur = args.at(\windowsize).linlin(0, 3, 1, 5, clip: \minmax),
+		bright = args.at(\avgrolloff).linlin(0, 4000, 1, 10, clip: \minmax),
+		brill = args.at(\avgcent).linlin(0, 3000, 1, 10, clip: \minmax),
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax);
+
+		if (freq == 0, {
+			freq = rrand (3, 30);
+		});
 
 		Pdef(
 			\rhythm, Pkill(
@@ -322,26 +340,32 @@ Handler {
 
 				\env, 1,
 
-				\dur, Pwhite(0.01, resonant),
+				\dur, Pwhite(0.01, resonant * 3),
 
-				\freq, freq,
+				\atk, Pwhite(1, bright * 2),
+
+				\rel, Pwhite(2 + (velocity * 3), 4 + (velocity * 3 * bright)),
+
+				\freq, Pwhite(freq, freq + freq / 10),
 
 				\rate, Pseq([
-					(0.5!3),
+					(0.5!(bright.asInteger)),
 					(1.0!(resonant.asInteger)),
-					-2.0
+					-2.0!((freq / 1000).asInteger)
 				], inf),
+
+				\cutoff, Pwhite(bright * 1000, bright * 4000),
 
 				\buf, Pshuf(buf, inf),
 
-				\pan, Pwhite(-1 * (resonant / 4), resonant / 4),
+				\pan, Pwhite(-1 * resonant, resonant),
 
-				\amp, Pwhite(velocity / 2, velocity),
+				\amp, Pwhite(0.3, 0.4),
 
 				\out, Pseq([
-					(~dryBus!1),
-					(~reverbShortBus!3),
-					(~reverbMidBus!(variance.asInteger)),
+					(~reverbShortBus!bright.asInteger),
+					(~reverbMidBus!brill.asInteger),
+					(~reverbLongBus!(variance.asInteger)),
 				], rrand(1, dur)),
 
 				{
@@ -358,6 +382,8 @@ Handler {
 	stateMachine { // function that relays handler buffer into playback machines
 
 		|buf|
+
+		args.postln;
 
 		switch(state,
 

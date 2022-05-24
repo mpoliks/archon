@@ -14,9 +14,12 @@ If you see errors, make sure you've moved the library folder to the extensions f
 ("OK: Listening on " + NetAddr.langPort.asString ++ ".").postln;
 // This is what SC is listening on, if you don't hear back from Python, make sure Python is listening on this port.
 
+~detectionThreshold = -30.dbamp;
+
 ~hardwareInputs = 1; // number of mics connected
-~hardwareOutputs = 2; // number of hardware outputs - right now this is configured for stereo
+~hardwareOutputs = 16; // number of hardware outputs - right now this is configured for stereo
 ~fr = 10; // how frequently to sample input for descriptors
+~outputChannel = 8; // remember: SuperCollider channel 0 = mixer channel 1
 
 // server settings, don't mess with these:
 ServerOptions.devices;
@@ -61,29 +64,43 @@ SynthDef(\playgran, { // granular synth
 		freq = 10,
 		amp = 1,
 		rate = 1.0,
+		atk = 0.5,
+		rel = 0.5,
+		cutoff = 1500,
 		sndbuf,
 		pan = 0,
 		envbuf|
 
-    var env, freqdev;
+    var env, fenv, freqdev, sig;
 
     env = EnvGen.kr(
-        Env([0, 1, 0], [1, 1], \sin, 1),
+		Env([0, 1, 0], [atk, rel], \sin, 1),
         gate,
         levelScale: amp,
         doneAction: Done.freeSelf);
 
-    Out.ar(out,
-        GrainBuf.ar(
+	sig = GrainBuf.ar(
 				2,
 				Impulse.kr(freq),
 				0.1,
 				sndbuf,
 				rate,
+
 				LFNoise2.kr(0.1).range(0, 1),
 				2,
 				(pan * LFNoise2.kr(0.1).range(-1, 1)),
-				envbuf) * env)
+				envbuf);
+
+	 fenv = EnvGen.kr(
+		Env([cutoff / 2, cutoff, cutoff / 2], [atk, rel], \exp, 1),
+        gate,
+        levelScale: amp,
+        doneAction: Done.freeSelf);
+
+	sig = LPF.ar(sig, fenv);
+
+    Out.ar(out, sig * env)
+
 }).add;
 
 SynthDef(\audioIn, { // simple patchcord
@@ -224,7 +241,7 @@ s.sync;
 ~mixGroup = Group.tail(s);
 // sets sequence for buses
 
-~dsp = Analysis.new(~fr, ~netAddr); // initiate Analysis module
+~dsp = Analysis.new(~fr, ~netAddr, ~detectionThreshold); // initiate Analysis module
 ~handler = Handler.new; // initialize Handler module
 ~behavior = Behavior.new(); // initialize Behavior module
 
@@ -283,7 +300,7 @@ Synth(
 ~mixSynth = Synth(
 	\mixIO, [
 		\in, ~mixBus,
-		\out, 0
+		\out, ~outputChannel
 	], ~mixGroup
 
 );

@@ -31,15 +31,15 @@ Analysis {
 
 	*new {
 
-		|r, netAddr|
+		|r, netAddr, detection_threshold|
 
-        ^super.new.init(r, netAddr)
+        ^super.new.init(r, netAddr, detection_threshold)
 
 	}
 
 	init {
 
-		|r, netAddr|
+		|r, netAddr, detection_threshold|
 
 		sr = 1000 / r; // setting sample rate
 
@@ -50,6 +50,9 @@ Analysis {
 			\number_of_samples -> 25,
 			\database -> 0.5
 		];
+
+		thresh = detection_threshold;
+		lPeak = detection_threshold;
 
 		"OK: Analysis Initialized".postln;
 
@@ -135,6 +138,8 @@ Analysis {
 			flat,
 			rms,
 			pitch); // send everything to the behavior module
+
+		str.postln;
 
 		addr.sendMsg("/query", str); // send to Python
 		ctr = ctr + 1; //increment event counter

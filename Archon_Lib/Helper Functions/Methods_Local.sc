@@ -67,9 +67,6 @@
 					if (pitch == ref[i],
 						{
 							midi = (i + 21) + (12 * oct.asInteger);
-							i.postln;
-							ref[i].postln;
-							midi.postln;
 							freq = midi.midicps;
 					});
 				};

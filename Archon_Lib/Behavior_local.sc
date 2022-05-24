@@ -72,6 +72,10 @@ Behavior {
 			onsets[i + 1] - onsets[i]}
 		).mean;
 
+		if (density.notNil != True, {
+			density = rrand(1.0, 6.0);
+		});
+
 		^ density
 
 	}
