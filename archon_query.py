@@ -62,9 +62,9 @@ def closest_node(input_dataframe, database_dataframe, database_tensors, audiodir
 def format_result(sample, pitch, target_audiodir):
     print(sample)
     audiofile = sample.name
-    #ensure Takeout-safe formatting  
-    if audiofile[:-6] != 'ms.wav': 
-        audiofile = audiofile[:-4] + "ms.wav"
+    #Takeout-safe formatting only
+    #if audiofile[:-6] != 'ms.wav': 
+        #audiofile = audiofile[:-4] + "ms.wav"
     if (pitch != "unpitched"): 
       oct = int(pitch[-1])
       pitch = pitch.replace(str(oct), "")  
