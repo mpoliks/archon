@@ -58,52 +58,53 @@ Handler {
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax);
 
 
-		Pdef(
-			\rhythm, Pkill(
+		Pkill(
 
-				\instrument, \playback,
+			\instrument, \playback,
 
-				\env, 1,
+			\env, 1,
 
-				\dur, Pseq([
-					Pwhite(0.05, 0.2 * dur, (dur + 2).asInteger),
-					Pwhite(0.01, 0.02 * dur, (dur + 2).asInteger),
-					Pwhite(0.4, 1.2, (dur + 2).asInteger)
-				], 1),
+			\dur, Pseq([
+				Pwhite(0.05, 0.2 * dur, (dur + 2).asInteger),
+				Pwhite(0.01, 0.02 * dur, (dur + 2).asInteger),
+				Pwhite(0.4, 1.2, (dur + 2).asInteger)
+			], 1),
 
-				\atk, Pwhite(width / 20, width / 10),
+			\atk, Pwhite(width / 20, width / 10),
 
-				\rel, Pwhite(dur / 10, dur / 5),
+			\rel, Pwhite(dur / 10, dur / 5),
 
-				\rate, Pseq(
-					[1.0]++
-					(2.0!(dense.asInteger))++
-					(0.5!(noise.asInteger))++
-					(1.0!(dense.asInteger * 2))++
-					(2.0!((dense/2).asInteger)),
-					1),
+			\rate, Pseq(
+				[1.0]++
+				(2.0!(dense.asInteger))++
+				(0.5!(noise.asInteger))++
+				(1.0!(dense.asInteger * 2))++
+				(2.0!((dense/2).asInteger)),
+				1),
 
-				\buf, Pshuf(buf, inf),
+			\buf, Pshuf(buf, inf),
 
-				\pan, Pwhite(-1 * width, width),
+			\pan, Pwhite(-1 * width, width),
 
-				\amp, Pwhite(0.1, 0.2),
+			\amp, Pwhite(0.1, 0.2),
 
-				\out, Pseq([
-					(~drybus!(bright.asInteger)),
-					(~reverbShortBus!4),
-					(~reverbLongBus!(resonant.asInteger)),
-					(~drybus!1),
-					(~reverbMidBus!(resonant.asInteger))], inf),
+			\out, Pseq([
+				(~drybus!(bright.asInteger)),
+				(~reverbShortBus!4),
+				(~reverbLongBus!(resonant.asInteger)),
+				(~drybus!1),
+				(~reverbMidBus!(resonant.asInteger))], inf),
 
-				{
+			{
+				Routine {
+					10.wait;
 					buf.do {
 						|b|
-						Buffer.free(b);
-					}
+						b.free;
+					};
 				}
+			}
 
-			)
 		).play
 	}
 
@@ -118,43 +119,43 @@ Handler {
 		resonant = args.at(\percpitch).linlin(0.0, 1.0, 7, 2, clip: \minmax),
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax);
 
+		Pkill(
 
-		Pdef(
-			\rhythm, Pkill(
+			\instrument, \playback,
 
-				\instrument, \playback,
+			\env, 1,
 
-				\env, 1,
+			\dur, Pwrand(
+				[(dur / 32), (dur / 8), (dur / 16), (dur /64), (dur / 32)],
+				[16, 1, 1, 2, 1].normalizeSum,
+				inf),
 
-				\dur, Pwrand(
-						[(dur / 32), (dur / 8), (dur / 16), (dur /64), (dur / 32)],
-						[16, 1, 1, 2, 1].normalizeSum,
-					inf),
+			\rate, Pwrand(
+				[0.5, 1, 2.0, -1],
+				[2, 6, 2, 6].normalizeSum,
+				inf),
 
-				\rate, Pwrand(
-					[0.5, 1, 2.0, -1],
-					[2, 6, 2, 6].normalizeSum,
-					inf),
+			\buf, Pshuf(buf, inf, inf),
 
-				\buf, Pshuf(buf, inf, inf),
+			\pan, Pwhite(-1, 1, inf),
 
-				\pan, Pwhite(-1, 1, inf),
+			//\amp, Pbrown(0.2, 0.1, 0.125, inf),
 
-				\amp, Pbrown(0.2, 0.1, 0.125, inf),
+			\out, Pseq([
+				(~reverbShortBus!((bright + 1).asInteger)),
+				(~dryBus!(3))
+				], (100 * dur).asInteger),
 
-				\out, Pseq([
-					(~reverbShortBus!((bright + 1).asInteger)),
-					(~dryBus!(3))
-					], (100 * dur).asInteger),
-
-				{
+			{
+				Routine {
+					10.wait;
 					buf.do {
 						|b|
-						Buffer.free(b);
-					}
+						b.free;
+					};
 				}
+			}
 
-			)
 		).play
 	}
 
@@ -168,49 +169,50 @@ Handler {
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 1.0, 4.0, clip: \minmax),
 		noise = args.at(\avgflat).linlin(0.0, 0.1, 1, 3, clip:\minmax);
 
-		Pdef(
-			\rhythm, Pkill(
+		Pkill(
 
-				\instrument, \playback,
-				\env, 1,
+			\instrument, \playback,
+			\env, 1,
 
-				\dur, temp,
+			\dur, temp,
 
-				\rate, Pseq([
-        			Pseries(
-						{ rrand(1.0, 1 + variance) },
-						1,
-						{ rrand(2.0, 2 + variance) }),
-        			Pseries(
-						{ rrand(1.0, 1 + variance) },
-						1,
-						{ rrand(0.1, 0.7) }),
-					Pseries(
-						{ rrand(1.0, 1 + variance) },
-						{ rrand(2.0, 2 + 1 + variance) })
-				], rrand(
-					1, (velocity.asInteger))
-				),
+			\rate, Pseq([
+				Pseries(
+					{ rrand(1.0, 1 + variance) },
+					1,
+					{ rrand(2.0, 2 + variance) }),
+				Pseries(
+					{ rrand(1.0, 1 + variance) },
+					1,
+					{ rrand(0.1, 0.7) }),
+				Pseries(
+					{ rrand(1.0, 1 + variance) },
+					{ rrand(2.0, 2 + 1 + variance) })
+			], rrand(
+				1, (velocity.asInteger))
+			),
 
-				\buf, Pshuf(buf, inf),
+			\buf, Pshuf(buf, inf),
 
-				\pan, Pwhite(-1, 1),
+			\pan, Pwhite(-1, 1),
 
-				\amp, Pwhite(0.1, 0.2),
+			\amp, Pwhite(0.1, 0.2),
 
-				\out, Pseq([
-					(~dryBus!3),
-					(~reverbShortBus!(noise.asInteger))
-				], (20).asInteger),
+			\out, Pseq([
+				(~dryBus!3),
+				(~reverbShortBus!(noise.asInteger))
+			], (20).asInteger),
 
-				{
+			{
+				Routine {
+					10.wait;
 					buf.do {
 						|b|
-						Buffer.free(b);
-					}
+						b.free;
+					};
 				}
+			}
 
-			)
 		).play
 	}
 
@@ -228,39 +230,40 @@ Handler {
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax);
 
 
-		Pdef(
-			\rhythm, Pkill(
+		Pkill(
 
-				\instrument, \playback,
+			\instrument, \playback,
 
-				\env, 1,
+			\env, 1,
 
-				\dur, Pwhite(0.01, 0.6),
+			\dur, Pwhite(0.01, 0.6),
 
-				\rate, rate,
+			\rate, rate,
 
-				\rel, 0.5 * (1 / rate),
+			\rel, 0.5 * (1 / rate),
 
-				\buf, Pshuf(buf, inf),
+			\buf, Pshuf(buf, inf),
 
-				\pan, Pwhite(-0.2, 0.2),
+			\pan, Pwhite(-0.2, 0.2),
 
-				\amp, Pwhite(velocity / 2, velocity),
+			\amp, Pwhite(velocity / 2, velocity),
 
-				\out, Pseq([
-					(~dryBus!2),
-					(~reverbShortBus!1),
-					(~reverbMidBus!(freq.asInteger)),
-				], rrand(4, 13)),
+			\out, Pseq([
+				(~dryBus!2),
+				(~reverbShortBus!1),
+				(~reverbMidBus!(freq.asInteger)),
+			], rrand(4, 13)),
 
-				{
+			{
+				Routine {
+					10.wait;
 					buf.do {
 						|b|
-						Buffer.free(b);
-					}
+						b.free;
+					};
 				}
+			}
 
-			)
 		).play
 	}
 
@@ -276,42 +279,43 @@ Handler {
 		bright = args.at(\avgrolloff).linlin(0, 12000, 1, 5, clip: \minmax),
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 1.0, 3.0, clip: \minmax);
 
-		Pdef(
-			\rhythm, Pkill(
+		Pkill(
 
-				\instrument, \playback,
+			\instrument, \playback,
 
-				\env, 1,
+			\env, 1,
 
-				\dur, Pwhite(0.01, 0.1),
+			\dur, Pwhite(0.01, 0.1),
 
-				\rate, Pseq([
-					(0.5!3),
-					(-0.5!(bright.asInteger))
-				], inf),
+			\rate, Pseq([
+				(0.5!3),
+				(-0.5!(bright.asInteger))
+			], inf),
 
-				\rel, 0.9 / (velocity),
+			\rel, 0.9 / (velocity),
 
-				\buf, Pshuf(buf, inf),
+			\buf, Pshuf(buf, inf),
 
-				\pan, Pwhite(-1 * (freq / 2), freq / 2),
+			\pan, Pwhite(-1 * (freq / 2), freq / 2),
 
-				\amp, Pwhite(bright / 10 , bright / 7),
+			\amp, Pwhite(bright / 10 , bright / 7),
 
-				\out, Pseq([
-					(~drybus!(resonant.asInteger)),
-					(~reverbShortBus!(resonant.asInteger)),
-					(~reverbMidBus!2),
-				], rrand(4, (velocity * 20).asInteger)),
+			\out, Pseq([
+				(~drybus!(resonant.asInteger)),
+				(~reverbShortBus!(resonant.asInteger)),
+				(~reverbMidBus!2),
+			], rrand(4, (velocity * 20).asInteger)),
 
-				{
+			{
+				Routine {
+					10.wait;
 					buf.do {
 						|b|
-						Buffer.free(b);
-					}
+						b.free;
+					};
 				}
+			}
 
-			)
 		).play
 	}
 
@@ -334,48 +338,49 @@ Handler {
 			freq = rrand (3, 30);
 		});
 
-		Pdef(
-			\rhythm, Pkill(
-				\instrument, \playgran,
+		Pkill(
+			\instrument, \playgran,
 
-				\env, 1,
+			\env, 1,
 
-				\dur, Pwhite(0.01, resonant * 3),
+			\dur, Pwhite(0.01, resonant * 3),
 
-				\atk, Pwhite(1, bright * 2),
+			\atk, Pwhite(1, bright * 2),
 
-				\rel, Pwhite(2 + (velocity * 3), 4 + (velocity * 3 * bright)),
+			\rel, Pwhite(2 + (velocity * 3), 4 + (velocity * 3 * bright)),
 
-				\freq, Pwhite(freq, freq + freq / 10),
+			\freq, Pwhite(freq, freq + freq / 10),
 
-				\rate, Pseq([
-					(0.5!(bright.asInteger)),
-					(1.0!(resonant.asInteger)),
-					-2.0!((freq / 1000).asInteger)
-				], inf),
+			\rate, Pseq([
+				(0.5!(bright.asInteger)),
+				(1.0!(resonant.asInteger)),
+				-2.0!((freq / 1000).asInteger)
+			], inf),
 
-				\cutoff, Pwhite(bright * 1000, bright * 4000),
+			\cutoff, Pwhite(bright * 1000, bright * 4000),
 
-				\buf, Pshuf(buf, inf),
+			\buf, Pshuf(buf, inf),
 
-				\pan, Pwhite(-1 * resonant, resonant),
+			\pan, Pwhite(-1 * resonant, resonant),
 
-				\amp, Pwhite(0.3, 0.4),
+			\amp, Pwhite(0.3, 0.4),
 
-				\out, Pseq([
-					(~reverbShortBus!bright.asInteger),
-					(~reverbMidBus!brill.asInteger),
-					(~reverbLongBus!(variance.asInteger)),
-				], rrand(1, dur)),
+			\out, Pseq([
+				(~reverbShortBus!bright.asInteger),
+				(~reverbMidBus!brill.asInteger),
+				(~reverbLongBus!(variance.asInteger)),
+			], rrand(1, dur)),
 
-				{
+			{
+				Routine {
+					10.wait;
 					buf.do {
 						|b|
-						Buffer.free(b);
-					}
+						b.free;
+					};
 				}
+			}
 
-			)
 		).play
 	}
 
@@ -383,7 +388,7 @@ Handler {
 
 		|buf|
 
-		args.postln;
+		//args.postln;
 
 		switch(state,
 
@@ -428,12 +433,12 @@ Handler {
 			var b;
 
 			if (i < (msg.size - 1), {
-				b = Buffer.read(server, msg[i], action: {
+				b = Buffer.readChannel(server, msg[i], 0, -1, [0], action: {
 					buf.add(b);
 					})
 				},
 				{
-				b = Buffer.read(server, msg[i], action: {
+				b = Buffer.readChannel(server, msg[i], 0, -1, [0], action: {
 					buf.add(b);
 					this.stateMachine(buf);
 				});

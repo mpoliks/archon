@@ -19,7 +19,13 @@ If you see errors, make sure you've moved the library folder to the extensions f
 ~hardwareInputs = 1; // number of mics connected
 ~hardwareOutputs = 16; // number of hardware outputs - right now this is configured for stereo
 ~fr = 10; // how frequently to sample input for descriptors
-~outputChannel = 8; // remember: SuperCollider channel 0 = mixer channel 1
+~outputChannel = 0; // remember: SuperCollider channel 0 = mixer channel 1
+
+~numVoices = 8;
+~voiceCounter = 0;
+
+~sampleSize = 0.25;
+~bufList = List.new();
 
 // server settings, don't mess with these:
 ServerOptions.devices;
@@ -30,6 +36,20 @@ s.reboot;
 s.meter;
 
 s.waitForBoot { // waits for server to boot to start defining server objects
+
+SynthDef(\pulse, {
+
+	|dur = 1,
+	dense = 1|
+
+	var trig = Impulse.kr(0);
+
+	SendReply.kr(
+			trig,
+			'/pulse'
+		);
+
+}).add;
 
 SynthDef(\playback, { // playback synth
 	|rate = 1,
@@ -242,8 +262,15 @@ s.sync;
 // sets sequence for buses
 
 ~dsp = Analysis.new(~fr, ~netAddr, ~detectionThreshold); // initiate Analysis module
-~handler = Handler.new; // initialize Handler module
+~voices = Array.fill(~numVoices, {
+		Handler.new; // initialize Handler module
+	});
 ~behavior = Behavior.new(); // initialize Behavior module
+
+Pdef(\pulsar, Pbind(
+			\instrument, \pulse,
+			\dur, Pwhite(0.01, 10, inf)
+	));
 
 Synth(
 	\audioIn, [
@@ -328,11 +355,30 @@ OSCdef(
 
 
 OSCdef(
+	\pulselistener, {
+
+	|msg|
+
+	if (~bufList.size > 0,
+		{
+			~voices[~voiceCounter].msg_handler(~bufList.scramble[0], s);
+		});
+	// sends Python output to Handler module
+
+}, '/pulse');
+
+
+OSCdef(
 	\nodelistener, {
 
 	|msg|
 
-	~handler.msg_handler(msg[1..msg.size], s); // sends Python output to Handler module
+	~bufList.add(msg[1..msg.size]);
+
+	if (~bufList.size > 3,
+		{
+			~bufList.removeAt(0)
+		});
 
 }, '/node');
 
@@ -342,11 +388,26 @@ OSCdef(
 
 	|msg|
 
-	~handler.settings(~behavior.receiver(msg)); // sets Handler settings with the Behavior module
+	var args = ~behavior.receiver(msg),
+	win = args[1].at(\windowsize).asFloat.linlin(0, 15, 1, 5, clip: \minmax),
+	dense = args[1].at(\density).asFloat.linlin(0, 15, 0.01, 15, clip: \minmax),
+	dur = (win * dense).linlin(0, 15, 0.01, 15, clip: \minmax);
+
+	Pdef(\pulsar, Pbind(
+				\instrument, \pulse,
+				\dur, Pwhite(dur / 2, dur + 1)));
+
+	~voiceCounter = (~voiceCounter + 1) % ~numVoices;
+
+	~voices[~voiceCounter]
+			.settings(
+				args); // sets Handler settings with the Behavior module
 
 }, '/behavior');
 
 "OK: Ready!".postln;
+
+Pdef(\pulsar).play;
 
 //s.record(numChannels:2); // optional to record output
 

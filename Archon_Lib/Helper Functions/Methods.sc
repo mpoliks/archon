@@ -31,6 +31,20 @@
 
 	}
 
+	sec2Hz {
+		var sec = this,
+		hz = 1 / sec;
+
+		^ hz;
+	}
+
+	hz2Sec {
+		var hz = this,
+		sec = 1 / hz;
+
+		^ sec;
+	}
+
 }
 
 + String {
