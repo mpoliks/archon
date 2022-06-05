@@ -7,7 +7,6 @@ If you see errors, make sure you've moved the library folder to the extensions f
 
 */
 
-
 (
 
 ~netAddr = NetAddr("127.0.0.1", 5005); // Python address
@@ -21,7 +20,8 @@ If you see errors, make sure you've moved the library folder to the extensions f
 ~fr = 10; // how frequently to sample input for descriptors
 ~outputChannel = 0; // remember: SuperCollider channel 0 = mixer channel 1
 
-~numVoices = 8;
+
+~numVoices = 64;
 ~voiceCounter = 0;
 
 ~sampleSize = 0.25;
@@ -29,20 +29,26 @@ If you see errors, make sure you've moved the library folder to the extensions f
 
 // server settings, don't mess with these:
 ServerOptions.devices;
+p = ServerOptions.new;
+p.memSize = 4096;
 Server.default.options.numInputBusChannels = ~hardwareInputs;
 Server.default.options.numOutputBusChannels = ~hardwareOutputs;
 s.options;
 s.reboot;
 s.meter;
+s.dumpOSC(code:1); //for debugging
 
 s.waitForBoot { // waits for server to boot to start defining server objects
 
 SynthDef(\pulse, {
 
-	|dur = 1,
-	dense = 1|
+	var trig = Impulse.kr(0),
 
-	var trig = Impulse.kr(0);
+	env = EnvGen.kr(
+			Env.new(
+				[1, 0],
+				[1]),
+			doneAction:2);
 
 	SendReply.kr(
 			trig,
@@ -55,49 +61,56 @@ SynthDef(\playback, { // playback synth
 	|rate = 1,
 	atk = 0.1,
 	rel = 0.4,
+	cutoff = 500,
 	pan = 0,
 	buf,
+	rq = 4.0,
 	amp = 1.0,
 	out|
 
-	var sig, env;
-
-	sig = PlayBuf.ar(
+	var sig = PlayBuf.ar(
 		1,
 		buf,
 		BufRateScale.ir(buf) * rate,
-		doneAction: 2);
+		doneAction: 2),
+
 	env = EnvGen.kr(
 			Env.new(
 				[0,1,0],
 				[atk, rel],
 				[1, -1]),
 			doneAction:2);
+
+	sig = BPF.ar(sig, cutoff);
+
 	sig = Pan2.ar(sig, pan, amp);
+
 	Out.ar(out, sig * env);
 
 }).add;
 
 SynthDef(\playgran, { // granular synth
 		|out,
-		gate = 1,
 		freq = 10,
-		amp = 1,
+		amp = 0.3,
 		rate = 1.0,
 		atk = 0.5,
 		rel = 0.5,
 		cutoff = 1500,
 		sndbuf,
-		pan = 0,
-		envbuf|
+		pan = 0|
 
-    var env, fenv, freqdev, sig;
+    var env = EnvGen.kr(
+			Env.new(
+				[0,1,0],
+				[atk, rel],
+				[1, -1]),
+			doneAction:2),
 
-    env = EnvGen.kr(
-		Env([0, 1, 0], [atk, rel], \sin, 1),
-        gate,
-        levelScale: amp,
-        doneAction: Done.freeSelf);
+	fenv = EnvGen.kr(
+		Env([cutoff / 2, cutoff, cutoff / 2], [atk, rel], \sin, 1),
+
+        levelScale: amp),
 
 	sig = GrainBuf.ar(
 				2,
@@ -105,19 +118,13 @@ SynthDef(\playgran, { // granular synth
 				0.1,
 				sndbuf,
 				rate,
-
 				LFNoise2.kr(0.1).range(0, 1),
 				2,
 				(pan * LFNoise2.kr(0.1).range(-1, 1)),
-				envbuf);
+				-1,
+				128);
 
-	 fenv = EnvGen.kr(
-		Env([cutoff / 2, cutoff, cutoff / 2], [atk, rel], \exp, 1),
-        gate,
-        levelScale: amp,
-        doneAction: Done.freeSelf);
-
-	sig = LPF.ar(sig, fenv);
+	sig = BPF.ar(sig, fenv);
 
     Out.ar(out, sig * env)
 
@@ -349,6 +356,7 @@ OSCdef(
 
 	|msg|
 
+	"OK: Python ACK Incoming".postln;
 	msg[1].postln; // just waits for Python acknowledgement
 
 }, '/superInterface');
@@ -357,13 +365,21 @@ OSCdef(
 OSCdef(
 	\pulselistener, {
 
-	|msg|
+	if (s.avgCPU < 60,
 
-	if (~bufList.size > 0,
 		{
-			~voices[~voiceCounter].msg_handler(~bufList.scramble[0], s);
-		});
-	// sends Python output to Handler module
+		~voiceCounter = (~voiceCounter + 1) % ~numVoices;
+		("OK: Selecting Voice" + ~voiceCounter.asString ++ ".").postln;
+		if (~bufList.size > 0,
+			{
+				~voices[~voiceCounter].msg_handler(~bufList.scramble[0], s);
+				// sends Python output to Handler module
+			});
+		},
+		{
+		"WARN: CPU High, Taking a Short Break".postln;
+		}
+	);
 
 }, '/pulse');
 
@@ -395,13 +411,13 @@ OSCdef(
 
 	Pdef(\pulsar, Pbind(
 				\instrument, \pulse,
-				\dur, Pwhite(dur / 2, dur + 1)));
+				\dur, Pwhite(dur / 5, dur + 1)));
 
-	~voiceCounter = (~voiceCounter + 1) % ~numVoices;
+			("OK: Setting Args for Voice" + ((~voiceCounter + 3) % ~numVoices).asString ++ ".").postln;
 
-	~voices[~voiceCounter]
-			.settings(
-				args); // sets Handler settings with the Behavior module
+		~voices[((~voiceCounter + 3) % ~numVoices)]
+		.settings(
+			args); // sets Handler settings with the Behavior module
 
 }, '/behavior');
 
