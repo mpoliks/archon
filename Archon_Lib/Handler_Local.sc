@@ -105,7 +105,7 @@ Handler {
 						|b|
 						b.free;
 					}
-				}.defer(2);
+				}.defer(20);
 			}
 
 		).play
@@ -122,7 +122,7 @@ Handler {
 		resonant = args.at(\percpitch).linlin(0.0, 1.0, 7, 2, clip: \minmax),
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax),
 		atk = 0.1,
-		cutoff = rrand(200 * (bright / 2), 800 * (bright / 2));
+		cutoff = rrand(400, 600);
 
 		Pkill(
 
@@ -137,7 +137,7 @@ Handler {
 
 			\rate, Pwrand(
 				[0.5, 1, 2.0, -1],
-				[2, 6, 2, 6].normalizeSum,
+				[2, 6, 1, 6].normalizeSum,
 				inf),
 
 			\buf, Pshuf(buf, inf, inf),
@@ -152,14 +152,11 @@ Handler {
 					.linlin(-1.0, 1.0, -1.0, 1.0, clip: \minmax),
 				inf),
 
-			\cutoff, Env(
-				[cutoff, cutoff * 6, cutoff / 2],
-				[rrand(dur, dur * 2), dur * 5],
-				\sin),
+			\cutoff, Pbrown(12000, 600, 140, inf),
 
 			\amp, Env(
 				[0, 0.3, 0],
-				[dur * 2, dur * 5],
+				[dur * 2, dur * 15],
 				\sin),
 
 			\out, Pseq([
@@ -173,7 +170,7 @@ Handler {
 						|b|
 						b.free;
 					}
-				}.defer(2);
+				}.defer(20);
 			}
 
 		).play
@@ -188,6 +185,7 @@ Handler {
 		bright = args.at(\avgrolloff).linlin(0, 12000, 0.1, 0.01, clip: \minmax),
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 1.0, 4.0, clip: \minmax),
 		noise = args.at(\avgflat).linlin(0.0, 0.1, 1, 3, clip:\minmax),
+		cutoff = rrand(200 * (bright / 2), 800 * (bright / 2)),
 		atk = 0.1;
 
 		Pkill(
@@ -202,14 +200,14 @@ Handler {
 				Pseries(
 					{ rrand(1.0, 1 + variance) },
 					-1,
-					{ rrand(2.0, 2 + variance) }),
+					{ rrand(-1.0, 2 + variance) }),
 				Pseries(
 					{ rrand(1.0, 1 + variance) },
 					1,
 					{ rrand(0.1, 0.7) }),
 				Pseries(
 					-1,
-					{ rrand(2.0, 2 + 1 + variance) })
+					{ rrand(1.2, 2 + 1 + variance) })
 			], rrand(
 				1, (velocity.asInteger))
 			),
@@ -220,14 +218,26 @@ Handler {
 
 			\buf, Pshuf(buf, inf),
 
-			\pan, Pwhite(-1, 1),
+			\pan, Pwhite(
+				rrand(-1, 1),
+				(rrand(-1, 1) + 0.2)
+					.linlin(-1.0, 1.0, -1.0, 1.0, clip: \minmax),
+				inf),
 
-			\amp, Pwhite(0.1, 0.2),
+			\amp, Env(
+				[0, 0.2, 0],
+				[temp * 2, temp * 3],
+				\sin),
+
+			\cutoff, Env(
+				[cutoff, cutoff * 6, cutoff / 2],
+				[rrand(0.8, temp * 10), temp * 10],
+				\sin),
 
 			\out, Pseq([
 				(~dryBus!3),
 				(~reverbShortBus!(noise.asInteger))
-			], (20).asInteger),
+			], (30).asInteger),
 
 			{
 				{
@@ -235,7 +245,7 @@ Handler {
 						|b|
 						b.free;
 					}
-				}.defer(2);
+				}.defer(20);
 			}
 
 		).play
@@ -295,7 +305,7 @@ Handler {
 						|b|
 						b.free;
 					}
-				}.defer(10);
+				}.defer(20);
 			}
 
 		).play
@@ -354,7 +364,7 @@ Handler {
 						|b|
 						b.free;
 					}
-				}.defer(2);
+				}.defer(20);
 			}
 
 		).play
@@ -370,15 +380,15 @@ Handler {
 
 			\instrument, \playgran,
 
-			\dur, Pwhite(0.2, 4),
+			\dur, Pwhite(0.2, 4, inf),
 
 			\env, 1,
+
+			\buf, Pshuf(buf, inf),
 
 			\atk, Pwhite(atk, atk * 13),
 
 			\rel, (~sampleSize * 2) - atk,
-
-			\buf, Pshuf(buf, inf),
 
 			\freq, Pwhite(6, 60),
 
@@ -406,7 +416,7 @@ Handler {
 						|b|
 						b.free;
 					}
-				}.defer(32);
+				}.defer(60);
 			}
 
 		).play
@@ -417,7 +427,6 @@ Handler {
 		|buf|
 
 		//args.postln;
-		state = \gp;
 
 		switch(state,
 
@@ -461,6 +470,7 @@ Handler {
 
 			var b;
 
+
 			if (i < (msg.size - 1), {
 				b = Buffer.readChannel(server, msg[i], 0, -1, [0], action: {
 					buf.add(b);
@@ -469,6 +479,7 @@ Handler {
 				{
 				b = Buffer.readChannel(server, msg[i], 0, -1, [0], action: {
 					buf.add(b);
+
 					{
 						this.stateMachine(buf)
 					}.defer(1);

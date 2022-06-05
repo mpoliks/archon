@@ -22,7 +22,7 @@ Pkill : Pattern {
 				var name = streampairs[i];
 				var stream = streampairs[i+1];
 				var streamout = stream.next(event);
-				// event.postln;
+ //event.postln;
 				if (streamout.isNil) {
 					this.kill(streampairs[endval + 1]);
 					^inevent };

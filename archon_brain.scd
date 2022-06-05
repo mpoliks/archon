@@ -29,14 +29,14 @@ If you see errors, make sure you've moved the library folder to the extensions f
 
 // server settings, don't mess with these:
 ServerOptions.devices;
-p = ServerOptions.new;
-p.memSize = 4096;
 Server.default.options.numInputBusChannels = ~hardwareInputs;
 Server.default.options.numOutputBusChannels = ~hardwareOutputs;
 s.options;
+s.options.memSize = 65536;
+s.options.numBuffers = 4096;
 s.reboot;
 s.meter;
-s.dumpOSC(code:1); //for debugging
+// s.dumpOSC(code:1); //for debugging
 
 s.waitForBoot { // waits for server to boot to start defining server objects
 
@@ -90,15 +90,16 @@ SynthDef(\playback, { // playback synth
 }).add;
 
 SynthDef(\playgran, { // granular synth
-		|out,
+		|out = 0,
 		freq = 10,
 		amp = 0.3,
 		rate = 1.0,
 		atk = 0.5,
-		rel = 0.5,
+		rel = 4,
 		cutoff = 1500,
-		sndbuf,
+		buf,
 		pan = 0|
+
 
     var env = EnvGen.kr(
 			Env.new(
@@ -107,26 +108,28 @@ SynthDef(\playgran, { // granular synth
 				[1, -1]),
 			doneAction:2),
 
-	fenv = EnvGen.kr(
-		Env([cutoff / 2, cutoff, cutoff / 2], [atk, rel], \sin, 1),
 
-        levelScale: amp),
+	fenv = EnvGen.kr(
+		Env(
+			[cutoff / 2, cutoff, cutoff / 2],
+			[atk, rel],
+			\sin, 1),
+		levelScale: amp),
 
 	sig = GrainBuf.ar(
 				2,
 				Impulse.kr(freq),
-				0.1,
-				sndbuf,
+				0.2,
+				buf,
 				rate,
 				LFNoise2.kr(0.1).range(0, 1),
 				2,
 				(pan * LFNoise2.kr(0.1).range(-1, 1)),
-				-1,
-				128);
+				-1);
 
 	sig = BPF.ar(sig, fenv);
 
-    Out.ar(out, sig * env)
+	Out.ar(out, sig * env)
 
 }).add;
 
@@ -267,6 +270,8 @@ s.sync;
 ~fxGroup = Group.tail(s);
 ~mixGroup = Group.tail(s);
 // sets sequence for buses
+
+~res = Buffer.read(s, "/Users/marekpoliks/Desktop/ARCHON_vox/unpitched/low_cent/low_flat/low_rollof/r_2_2179000.wav");
 
 ~dsp = Analysis.new(~fr, ~netAddr, ~detectionThreshold); // initiate Analysis module
 ~voices = Array.fill(~numVoices, {
@@ -410,12 +415,12 @@ OSCdef(
 	dur = (win * dense).linlin(0, 15, 0.01, 15, clip: \minmax);
 
 	Pdef(\pulsar, Pbind(
-				\instrument, \pulse,
-				\dur, Pwhite(dur / 5, dur + 1)));
+		\instrument, \pulse,
+		\dur, Pwhite(dur / 5, dur + 1)));
 
-			("OK: Setting Args for Voice" + ((~voiceCounter + 3) % ~numVoices).asString ++ ".").postln;
+	("OK: Setting Args for Voice" + ((~voiceCounter + 3) % ~numVoices).asString ++ ".").postln;
 
-		~voices[((~voiceCounter + 3) % ~numVoices)]
+	~voices[((~voiceCounter + 3) % ~numVoices)]
 		.settings(
 			args); // sets Handler settings with the Behavior module
 
@@ -425,7 +430,7 @@ OSCdef(
 
 Pdef(\pulsar).play;
 
-//s.record(numChannels:2); // optional to record output
+s.record(numChannels:2); // optional to record output
 
 }
 
