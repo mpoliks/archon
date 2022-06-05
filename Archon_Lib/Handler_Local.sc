@@ -20,8 +20,6 @@ Handler {
 
 	init {
 
-		"OK: Handler Initialized".postln;
-
 		args = Dictionary[
 			\windowsize -> 0.4, // duration of average event
 			\percpitch -> 0.0, // % of an event that is pitched
@@ -45,6 +43,7 @@ Handler {
 
 	}
 
+
 	sciarrinoPlayer { // short flurries of events
 
 		|buf|
@@ -55,7 +54,9 @@ Handler {
 		width = args.at(\avgrms).linlin(0.0, 1.0, 0.3, 1.0, clip: \minmax),
 		resonant = args.at(\percpitch).linlin(0.0, 1.0, 1, 4, clip: \minmax),
 		noise = args.at(\avgflat).linlin(0.0, 0.1, 1, 3, clip:\minmax),
-		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax);
+		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax),
+		atk = 0.1;
+
 
 
 		Pkill(
@@ -70,9 +71,10 @@ Handler {
 				Pwhite(0.4, 1.2, (dur + 2).asInteger)
 			], 1),
 
-			\atk, Pwhite(width / 20, width / 10),
+			\atk, atk,
 
-			\rel, Pwhite(dur / 10, dur / 5),
+			\rel, ~sampleSize - atk,
+
 
 			\rate, Pseq(
 				[1.0]++
@@ -83,6 +85,8 @@ Handler {
 				1),
 
 			\buf, Pshuf(buf, inf),
+
+			\cutoff, Pbrown(600, 15000, 400, inf),
 
 			\pan, Pwhite(-1 * width, width),
 
@@ -96,13 +100,12 @@ Handler {
 				(~reverbMidBus!(resonant.asInteger))], inf),
 
 			{
-				Routine {
-					10.wait;
+				{
 					buf.do {
 						|b|
 						b.free;
-					};
-				}
+					}
+				}.defer(2);
 			}
 
 		).play
@@ -114,10 +117,12 @@ Handler {
 
 		var dur = args.at(\density).linlin(0.0, 5.0, 0.2, 1.0, clip: \minmax),
 		variance = args.at(\windowsize).linlin(0.0, 3.0, 0.1, 0.3, clip: \minmax),
-		bright = args.at(\avgrolloff).linlin(0, 12000, 0, 4, clip: \minmax),
+		bright = args.at(\avgrolloff).linlin(1000, 12000, 1, 4, clip: \minmax),
 		width = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 1.0, clip: \minmax),
 		resonant = args.at(\percpitch).linlin(0.0, 1.0, 7, 2, clip: \minmax),
-		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax);
+		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax),
+		atk = 0.1,
+		cutoff = rrand(200 * (bright / 2), 800 * (bright / 2));
 
 		Pkill(
 
@@ -137,9 +142,25 @@ Handler {
 
 			\buf, Pshuf(buf, inf, inf),
 
-			\pan, Pwhite(-1, 1, inf),
+			\atk, atk,
 
-			//\amp, Pbrown(0.2, 0.1, 0.125, inf),
+			\rel, ~sampleSize - atk,
+
+			\pan, Pwhite(
+				rrand(-1, 1),
+				(rrand(-1, 1) + 0.3)
+					.linlin(-1.0, 1.0, -1.0, 1.0, clip: \minmax),
+				inf),
+
+			\cutoff, Env(
+				[cutoff, cutoff * 6, cutoff / 2],
+				[rrand(dur, dur * 2), dur * 5],
+				\sin),
+
+			\amp, Env(
+				[0, 0.3, 0],
+				[dur * 2, dur * 5],
+				\sin),
 
 			\out, Pseq([
 				(~reverbShortBus!((bright + 1).asInteger)),
@@ -147,13 +168,12 @@ Handler {
 				], (100 * dur).asInteger),
 
 			{
-				Routine {
-					10.wait;
+				{
 					buf.do {
 						|b|
 						b.free;
-					};
-				}
+					}
+				}.defer(2);
 			}
 
 		).play
@@ -163,15 +183,17 @@ Handler {
 
 		|buf|
 
-		var temp = args.at(\density).linlin(0.0, 5.0, 0.0, 0.2, clip: \minmax),
+		var temp = args.at(\density).linlin(0.0, 5.0, 0.1, 1.0, clip: \minmax),
 		variance = args.at(\windowsize).linlin(0.0, 3.0, 0.0, 0.3, clip: \minmax),
 		bright = args.at(\avgrolloff).linlin(0, 12000, 0.1, 0.01, clip: \minmax),
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 1.0, 4.0, clip: \minmax),
-		noise = args.at(\avgflat).linlin(0.0, 0.1, 1, 3, clip:\minmax);
+		noise = args.at(\avgflat).linlin(0.0, 0.1, 1, 3, clip:\minmax),
+		atk = 0.1;
 
 		Pkill(
 
 			\instrument, \playback,
+
 			\env, 1,
 
 			\dur, temp,
@@ -179,18 +201,22 @@ Handler {
 			\rate, Pseq([
 				Pseries(
 					{ rrand(1.0, 1 + variance) },
-					1,
+					-1,
 					{ rrand(2.0, 2 + variance) }),
 				Pseries(
 					{ rrand(1.0, 1 + variance) },
 					1,
 					{ rrand(0.1, 0.7) }),
 				Pseries(
-					{ rrand(1.0, 1 + variance) },
+					-1,
 					{ rrand(2.0, 2 + 1 + variance) })
 			], rrand(
 				1, (velocity.asInteger))
 			),
+
+			\atk, atk,
+
+			\rel, ~sampleSize - atk,
 
 			\buf, Pshuf(buf, inf),
 
@@ -204,13 +230,12 @@ Handler {
 			], (20).asInteger),
 
 			{
-				Routine {
-					10.wait;
+				{
 					buf.do {
 						|b|
 						b.free;
-					};
-				}
+					}
+				}.defer(2);
 			}
 
 		).play
@@ -226,8 +251,9 @@ Handler {
 		freq = args.at(\mainpitch)
 			.asString
 			.pitchcps
-			.linlin(0, 10000, 0, 10, clip: \mixmax),
-		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax);
+			.linlin(0, 10000, 1, 10, clip: \mixmax),
+		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax),
+		atk = 0.1;
 
 
 		Pkill(
@@ -236,32 +262,40 @@ Handler {
 
 			\env, 1,
 
-			\dur, Pwhite(0.01, 0.6),
+			\atk, atk,
+
+			\rel, (~sampleSize * 2) - atk,
+
+			\dur, Pwhite(0.01, 3.0),
 
 			\rate, rate,
 
 			\rel, 0.5 * (1 / rate),
 
+			\cutoff, Env(
+				[freq * 2000, freq * 1000, freq * 500],
+				[rrand(0.1, 0.5), rrand(1, 9)],
+				\sin),
+
 			\buf, Pshuf(buf, inf),
 
 			\pan, Pwhite(-0.2, 0.2),
 
-			\amp, Pwhite(velocity / 2, velocity),
+			\amp, Pwhite(0.2, 0.4),
 
 			\out, Pseq([
 				(~dryBus!2),
 				(~reverbShortBus!1),
 				(~reverbMidBus!(freq.asInteger)),
-			], rrand(4, 13)),
+			], rrand(1, 3)),
 
 			{
-				Routine {
-					10.wait;
+				{
 					buf.do {
 						|b|
 						b.free;
-					};
-				}
+					}
+				}.defer(10);
 			}
 
 		).play
@@ -277,7 +311,8 @@ Handler {
 			.linlin(0, 10000, 2, 0.01, clip: \mixmax),
 		resonant = args.at(\percpitch).linlin(0.0, 1.0, 7, 2, clip: \minmax),
 		bright = args.at(\avgrolloff).linlin(0, 12000, 1, 5, clip: \minmax),
-		velocity = args.at(\avgrms).linlin(0.0, 1.0, 1.0, 3.0, clip: \minmax);
+		velocity = args.at(\avgrms).linlin(0.0, 1.0, 1.0, 3.0, clip: \minmax),
+		atk = 0.1;
 
 		Pkill(
 
@@ -287,12 +322,19 @@ Handler {
 
 			\dur, Pwhite(0.01, 0.1),
 
+			\atk, atk,
+
+			\rel, (~sampleSize * 2) - atk,
+
 			\rate, Pseq([
 				(0.5!3),
 				(-0.5!(bright.asInteger))
 			], inf),
 
-			\rel, 0.9 / (velocity),
+			\cutoff, Env(
+				[bright * 1000, bright * 2000, bright * 500],
+				[rrand(0.1, 0.5), rrand(1, 9)],
+				\sin),
 
 			\buf, Pshuf(buf, inf),
 
@@ -307,13 +349,12 @@ Handler {
 			], rrand(4, (velocity * 20).asInteger)),
 
 			{
-				Routine {
-					10.wait;
+				{
 					buf.do {
 						|b|
 						b.free;
-					};
-				}
+					}
+				}.defer(2);
 			}
 
 		).play
@@ -323,62 +364,49 @@ Handler {
 
 		|buf|
 
-		var freq = args.at(\mainpitch)
-			.asString
-			.pitchcps
-			.linlin(0, 10000, 0, 10000, clip: \mixmax),
-		resonant = args.at(\percpitch).linlin(0.0, 1.0, 1, 4, clip: \minmax),
-		variance = args.at(\windowsize).linlin(0.0, 3.0, 1.0, 10.0, clip: \minmax),
-		dur = args.at(\windowsize).linlin(0, 3, 1, 5, clip: \minmax),
-		bright = args.at(\avgrolloff).linlin(0, 4000, 1, 10, clip: \minmax),
-		brill = args.at(\avgcent).linlin(0, 3000, 1, 10, clip: \minmax),
-		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax);
-
-		if (freq == 0, {
-			freq = rrand (3, 30);
-		});
+		var atk = 0.1;
 
 		Pkill(
+
 			\instrument, \playgran,
+
+			\dur, Pwhite(0.2, 4),
 
 			\env, 1,
 
-			\dur, Pwhite(0.01, resonant * 3),
+			\atk, Pwhite(atk, atk * 13),
 
-			\atk, Pwhite(1, bright * 2),
-
-			\rel, Pwhite(2 + (velocity * 3), 4 + (velocity * 3 * bright)),
-
-			\freq, Pwhite(freq, freq + freq / 10),
-
-			\rate, Pseq([
-				(0.5!(bright.asInteger)),
-				(1.0!(resonant.asInteger)),
-				-2.0!((freq / 1000).asInteger)
-			], inf),
-
-			\cutoff, Pwhite(bright * 1000, bright * 4000),
+			\rel, (~sampleSize * 2) - atk,
 
 			\buf, Pshuf(buf, inf),
 
-			\pan, Pwhite(-1 * resonant, resonant),
+			\freq, Pwhite(6, 60),
+
+			\rate, Pseq([
+				(0.5!(1)),
+				(1.0!(1)),
+				(-2.0!(1))
+			], 1),
+
+			\cutoff, Pwhite(800, 16000),
+
+			\pan, Pwhite(-1, 1),
 
 			\amp, Pwhite(0.3, 0.4),
 
 			\out, Pseq([
-				(~reverbShortBus!bright.asInteger),
-				(~reverbMidBus!brill.asInteger),
-				(~reverbLongBus!(variance.asInteger)),
-			], rrand(1, dur)),
+				(~reverbShortBus),
+				(~reverbMidBus),
+				(~reverbLongBus),
+			], 1),
 
 			{
-				Routine {
-					10.wait;
+				{
 					buf.do {
 						|b|
 						b.free;
-					};
-				}
+					}
+				}.defer(32);
 			}
 
 		).play
@@ -389,6 +417,7 @@ Handler {
 		|buf|
 
 		//args.postln;
+		state = \gp;
 
 		switch(state,
 
@@ -424,7 +453,7 @@ Handler {
 
 		var buf = List.new();
 
-		msg.postln;
+		//msg.postln;
 
 		msg.size.do {
 
@@ -440,9 +469,11 @@ Handler {
 				{
 				b = Buffer.readChannel(server, msg[i], 0, -1, [0], action: {
 					buf.add(b);
-					this.stateMachine(buf);
+					{
+						this.stateMachine(buf)
+					}.defer(1);
 				});
-			});
+			})
 		};
 	}
 

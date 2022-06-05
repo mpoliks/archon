@@ -139,7 +139,7 @@ Analysis {
 			rms,
 			pitch); // send everything to the behavior module
 
-		str.postln;
+		"OK: Analysis = " + str.postln;
 
 		addr.sendMsg("/query", str); // send to Python
 		ctr = ctr + 1; //increment event counter

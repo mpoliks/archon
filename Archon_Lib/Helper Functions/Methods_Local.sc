@@ -74,7 +74,7 @@
 			},
 			{
 				oct = pitch[(pitch.size - 1)..];
-				oct.postln;
+
 				pitch = pitch.replace(oct);
 				ref.size.do {
 					|i|
