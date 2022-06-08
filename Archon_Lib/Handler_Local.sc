@@ -121,8 +121,7 @@ Handler {
 		width = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 1.0, clip: \minmax),
 		resonant = args.at(\percpitch).linlin(0.0, 1.0, 7, 2, clip: \minmax),
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax),
-		atk = 0.1,
-		cutoff = rrand(400, 600);
+		atk = 0.1;
 
 		Pkill(
 
@@ -185,7 +184,7 @@ Handler {
 		bright = args.at(\avgrolloff).linlin(0, 12000, 0.1, 0.01, clip: \minmax),
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 1.0, 4.0, clip: \minmax),
 		noise = args.at(\avgflat).linlin(0.0, 0.1, 1, 3, clip:\minmax),
-		cutoff = rrand(200 * (bright / 2), 800 * (bright / 2)),
+		cutoff = rrand(200 * velocity, 800 * velocity),
 		atk = 0.1;
 
 		Pkill(
@@ -372,9 +371,18 @@ Handler {
 
 	granPlayer { // granular synthesis engine corresponding to input frequency
 
+
 		|buf|
 
-		var atk = 0.1;
+		var freq = args.at(\mainpitch)
+			.asString
+			.pitchcps
+			.linlin(0, 10000, 2, 0.01, clip: \mixmax),
+		atk = 0.1;
+
+		if (freq < 30, {
+			freq = rrand(6, 60)
+		});
 
 		Pkill(
 
@@ -390,7 +398,7 @@ Handler {
 
 			\rel, (~sampleSize * 2) - atk,
 
-			\freq, Pwhite(6, 60),
+			\freq, freq,
 
 			\rate, Pseq([
 				(0.5!(1)),
