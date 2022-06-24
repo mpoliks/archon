@@ -72,7 +72,8 @@ Behavior {
 			onsets[i + 1] - onsets[i]}
 		).mean;
 
-		if (density.notNil != True, {
+		if (density.notNil == False, {
+			"WARN: no density specified".postln;
 			density = rrand(1.0, 6.0);
 		});
 
@@ -197,9 +198,7 @@ Behavior {
 		w_gp = ((weights.at(\gp) * 100)
 		- (density_delta / 10)
 		+ (percpitch_delta / 5)
-		- (avgcent_delta / 10)
-		- (avgflat_delta / 10)
-		- (avgrms_delta / 10)
+		- (avgrms_delta / 5)
 		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
 
 		// setting target
@@ -226,7 +225,7 @@ Behavior {
 		means = theseMeans;
 		weights = theseWeights;
 
-		eventTarget = eventCtr + rrand(1, 30);
+		eventTarget = eventCtr + rrand(1, 40);
 
 		^ thisTarget // return target
 

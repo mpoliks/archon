@@ -6,14 +6,13 @@ If you see errors, make sure you've moved the library folder to the extensions f
 '/Library/Application Support/SuperCollider/Extensions'.
 
 */
-
 (
 
 ~netAddr = NetAddr("127.0.0.1", 5005); // Python address
 ("OK: Listening on " + NetAddr.langPort.asString ++ ".").postln;
 // This is what SC is listening on, if you don't hear back from Python, make sure Python is listening on this port.
 
-~detectionThreshold = -30.dbamp;
+~detectionThreshold = -60.dbamp;
 
 ~hardwareInputs = 1; // number of mics connected
 ~hardwareOutputs = 16; // number of hardware outputs - right now this is configured for stereo
@@ -21,10 +20,10 @@ If you see errors, make sure you've moved the library folder to the extensions f
 ~outputChannel = 0; // remember: SuperCollider channel 0 = mixer channel 1
 
 
-~numVoices = 64;
+~numVoices = 32;
 ~voiceCounter = 0;
 
-~sampleSize = 0.25;
+~sampleSize = 0.5;
 ~bufList = List.new();
 
 // server settings, don't mess with these:
@@ -271,7 +270,7 @@ s.sync;
 ~mixGroup = Group.tail(s);
 // sets sequence for buses
 
-~res = Buffer.read(s, "/Users/marekpoliks/Desktop/ARCHON_vox/unpitched/low_cent/low_flat/low_rollof/r_2_2179000.wav");
+~res = Buffer.read(s, "/Users/marek_orpheus/Desktop/ARCHON_db/B/4/2021-02-24_03-07_10evzcbq_1nckwb0l_sample7_0_500ms.wav");
 
 ~dsp = Analysis.new(~fr, ~netAddr, ~detectionThreshold); // initiate Analysis module
 ~voices = Array.fill(~numVoices, {
@@ -413,16 +412,23 @@ OSCdef(
 	win = args[1].at(\windowsize).asFloat.linlin(0, 15, 1, 5, clip: \minmax),
 	dense = args[1].at(\density).asFloat.linlin(0, 15, 0.01, 15, clip: \minmax),
 	dur = (win * dense).linlin(0, 15, 0.01, 15, clip: \minmax);
+	("density: " + dense.asString).postln;
+	("windowsize: " + win.asString).postln;
 
-	Pdef(\pulsar, Pbind(
-		\instrument, \pulse,
-		\dur, Pwhite(dur / 5, dur + 1)));
+	Pdef(\pulsar,
+			Pbind(
+				\instrument, \pulse,
+				\dur, Pwhite((dur / 3), (dur + 8))
+			)
+		);
 
-	("OK: Setting Args for Voice" + ((~voiceCounter + 3) % ~numVoices).asString ++ ".").postln;
-
-	~voices[((~voiceCounter + 3) % ~numVoices)]
-		.settings(
-			args); // sets Handler settings with the Behavior module
+	4.do({
+		|c|
+		~voices[((~voiceCounter + c + 1) % ~numVoices)]
+			.settings(
+				args); // sets Handler settings with the Behavior module
+		("OK: Setting Args for Voice" + ((~voiceCounter + 3 + c) % ~numVoices).asString ++ ".").postln;
+		});
 
 }, '/behavior');
 
@@ -430,7 +436,7 @@ OSCdef(
 
 Pdef(\pulsar).play;
 
-s.record(numChannels:2); // optional to record output
+//s.record(numChannels:2); // optional to record output
 
 }
 

@@ -199,7 +199,8 @@ Analysis {
 					if (peak > lPeak, {
 						lPeak = peak;
 						thresh = lPeak / 2;
-						if (thresh < 0.05, thresh = 0.05);
+						// if (thresh < 0.05, thresh = 0.05);
+						if (thresh < 0.15, thresh = 0.15);
 					});
 					this.analysisFunctions(msg);
 				});
