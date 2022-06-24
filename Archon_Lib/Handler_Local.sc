@@ -109,6 +109,131 @@ Handler {
 		).play
 	}
 
+	sonorousPlayer { // flurries of events with reverb
+
+		|buf|
+
+		var dur = args.at(\windowsize).linlin(0, 5, 1, 5, clip: \minmax),
+		dense = args.at(\density).linlin(0, 5, 1, 5, clip: \minmax),
+		bright = args.at(\avgrolloff).linlin(0, 12000, 0, 5, clip: \minmax),
+		cent = args.at(\avgcent).linlin(0, 10000, 200, 16000, clip: \minmax),
+		width = args.at(\avgrms).linlin(0.0, 1.0, 0.3, 1.0, clip: \minmax),
+		resonant = args.at(\percpitch).linlin(0.0, 1.0, 1, 4, clip: \minmax),
+		noise = args.at(\avgflat).linlin(0.0, 0.1, 1, 3, clip:\minmax),
+		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax),
+		reps = rrand(dense, dense * 3),
+		freq = args.at(\mainpitch).asString.pitchcps,
+		choose = rrand(0, 4),
+		atk = rrand(0.01, 0.4);
+
+		Pkill(
+
+			\instrument, \playback,
+
+			\env, 1,
+
+			\dur, Pseq([
+				Pwhite(0.05, 0.2 * dur, (dur + 2).asInteger),
+				Pwhite(0.01, 0.02 * dur, (dur + 2).asInteger),
+				Pwhite(0.4, 1.2, (dur + 2).asInteger)
+			], inf),
+
+			\atk, atk,
+
+			\rel, ~sampleSize - atk,
+
+			\rate, Pseq(
+				[1.0]++
+				(0.5!(noise.asInteger))++
+				(-1.0!(dense.asInteger * 2))++
+				(1.0!((dense/2).asInteger)),
+				inf),
+
+			\buf, Pshuf(buf, inf),
+
+			\cutoff, Env(
+				[cent, cent * 2, cent / 2],
+				[(reps / 2).asInteger, (reps / 2).asInteger],
+				\sin),
+
+			\amp, Env(
+				[0, 0.2, 0],
+				[(reps / 2).asInteger, (reps / 2).asInteger],
+				\sin),
+
+			\pan, Pwhite(-1 * width, width),
+
+			\out, Pseq([
+				(~reverbShortBus!2),
+				(~reverbMidBus!3)], inf),
+
+			{
+				{
+					buf.do {
+						|b|
+						b.free;
+					}
+				}.defer(20);
+			}
+
+		).play;
+
+		if (choose > 1, {
+
+			if ((freq < 30), {
+				freq = rrand(6, 60)
+			});
+
+			Pkill(
+
+				\instrument, \playgran,
+
+				\dur, dense,
+
+				\env, 1,
+
+				\buf, Pshuf(buf, inf),
+
+				\atk, Pwhite(1.0, 12.0),
+
+				\rel, Pwhite(1.0, 12.0),
+
+				\freq, freq,
+
+				\rate, Pseq([
+					(-1.0!(1)),
+					(1.0!(1)),
+				], (reps / 4).asInteger),
+
+				\cutoff, Env(
+					[cent, cent * 5, cent / 2],
+					[(reps / 4).asInteger, (reps / 4).asInteger],
+					\sin),
+
+				\pan, Pwhite(-1 * width, width),
+
+				\amp, Pwhite(0.1, 0.3),
+
+				\out, Pseq([
+					(~reverbMidBus),
+					(~reverbLongBus),
+				], inf),
+
+				{
+					{
+						buf.do {
+							|b|
+							b.free;
+						}
+					}.defer(60);
+				}
+
+			).play;
+
+		});
+
+	}
+
 	machinePlayer { // semi-periodic assemblages of events
 
 		|buf|
@@ -444,12 +569,16 @@ Handler {
 				this.sciarrinoPlayer(buf)
 			},
 
+			\so, {
+				this.sonorousPlayer(buf)
+			},
+
 			\ma, {
 				this.machinePlayer(buf)
 			},
 
 			\te, {
-				this.techPlayer(buf) // debug why didn't load sounds
+				this.techPlayer(buf)
 			},
 
 			\st, {

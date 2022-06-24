@@ -38,7 +38,7 @@ Behavior {
 
 		eventTarget = rrand(1,10); // setting first event target randomly
 
-		targets = [\sc, \ma, \te, \st, \ht, \hp];
+		targets = [\sc, \so, \ma, \te, \st, \ht, \hp];
 
 		means = Dictionary[
 			\density -> 1.0,
@@ -53,6 +53,7 @@ Behavior {
 
 		weights = Dictionary[
 			\sc -> 0,
+			\so -> 0,
 			\ma -> 0,
 			\te -> 0,
 			\st -> 0,
@@ -164,6 +165,15 @@ Behavior {
 		+ (avgflat_delta / 10)
 		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
 
+		w_so = ((weights.at(\sc) * 100)
+		+ (density_delta / 10)
+		+ (windowsize_delta / 10)
+		+ (percpitch_delta / 10)
+		- (avgflat_delta / 10)
+		- (avgcent_delta / 10)
+		- (avgrolloff_delta / 10)
+		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
+
 		w_ma = ((weights.at(\ma) * 100)
 		+ (density_delta / 10)
 		+ (windowsize_delta / 10)
@@ -202,7 +212,7 @@ Behavior {
 		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
 
 		// setting target
-		calib = [w_sc, w_ma, w_te, w_st, w_ht, w_gp],
+		calib = [w_sc, w_so, w_ma, w_te, w_st, w_ht, w_gp],
 
 		recalib = Array.fill(
 			calib.size, {
@@ -215,11 +225,12 @@ Behavior {
 		// resetting current means and weights
 		theseWeights = Dictionary[
 			\sc -> recalib[0],
-			\ma -> recalib[1],
-			\te -> recalib[2],
-			\st -> recalib[3],
-			\ht -> recalib[4],
-			\gp -> recalib[5]
+			\so -> recalib[1],
+			\ma -> recalib[2],
+			\te -> recalib[3],
+			\st -> recalib[4],
+			\ht -> recalib[5],
+			\gp -> recalib[6]
 		];
 
 		means = theseMeans;

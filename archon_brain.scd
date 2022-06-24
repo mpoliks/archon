@@ -135,11 +135,20 @@ SynthDef(\playgran, { // granular synth
 SynthDef(\audioIn, { // simple patchcord
 
 	|out = 0,
-	in = 0|
+	in = 0,
+	amp = 1|
 
-	var micIn = SoundIn.ar(in, 1);
+	var micIn = SoundIn.ar(in, 1),
 
-	Out.ar(out, micIn)
+	sig = Compander.ar(micIn,
+		micIn,
+		thresh: 0.5,
+		slopeBelow: 1.0,
+		slopeAbove: 0.25,
+		clampTime: 0.01,
+		relaxTime: 0.09);
+
+	Out.ar(out, sig * amp)
 
 }).add;
 
@@ -221,7 +230,7 @@ SynthDef(\dryIO, { // compressor on the dry bus
 
 	sig = Compander.ar(sig,
 			sig,
-			thresh: 0.5,
+			thresh: 0.4,
 			slopeBelow: 1.0,
 			slopeAbove: 0.25,
 			clampTime: 0.01,
@@ -240,14 +249,14 @@ SynthDef(\mixIO, { // compressor and limiter on the mix bus
 
 	sig = Compander.ar(sig,
 			sig,
-			thresh: 0.7,
+			thresh: 0.5,
 			slopeBelow: 1.0,
 			slopeAbove: 0.25,
 			clampTime: 0.01,
 			relaxTime: 0.01);
 
 	sig = Limiter.ar(sig,
-			level: 1.0,
+			level: 0.8,
 			dur: 0.1);
 
 	Out.ar(out, sig);
@@ -287,6 +296,14 @@ Synth(
 	\audioIn, [
 		\out, ~analysisBus.index,
 		\in, 0
+	], ~inputGroup
+);
+
+~violinOut = Synth(
+	\audioIn, [
+		\out, ~reverbShortBus.index,
+		\in, 0,
+		\amp, 0.2
 	], ~inputGroup
 );
 
@@ -431,6 +448,41 @@ OSCdef(
 		});
 
 }, '/behavior');
+
+
+Window.closeAll;
+
+s.meter (~hardwareInputs, ~hardwareOutputs);
+
+~w = Window("GUI Controls", Rect(0,-100,650,550))
+	.front
+	.alwaysOnTop_(true);
+	~w.view.decorator_(
+		FlowLayout(
+			~w.bounds,
+			10@10,
+			10@10));
+
+
+~vlnSlider = EZSlider.new(
+	~w,
+	Rect(20, 160, 200, 30),
+	"Violin Output Level",
+	ControlSpec.new(
+		0.0,
+		1.0,
+		\lin,
+		0.01,
+		0.2,
+		""), {
+		|slider|
+		~violinOut.set(
+			\amp,
+			slider.value);
+		});
+	}
+);
+
 
 "OK: Ready!".postln;
 
