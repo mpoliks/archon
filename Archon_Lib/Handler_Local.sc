@@ -88,14 +88,14 @@ Handler {
 
 			\pan, Pwhite(-1 * width, width),
 
-			\amp, Pwhite(0.1, 0.2),
+			\amp, Pwhite(0.02, 0.1),
 
 			\out, Pseq([
-				(~drybus!(bright.asInteger)),
-				(~reverbShortBus!4),
-				(~reverbLongBus!(resonant.asInteger)),
-				(~drybus!1),
-				(~reverbMidBus!(resonant.asInteger))], inf),
+				(~dryBus[rrand(0, 4) % ~numPairs]!(bright.asInteger)),
+				(~reverbShortBus[rrand(0, 4) % ~numPairs]!4),
+				(~reverbLongBus[rrand(0, 4) % ~numPairs]!(resonant.asInteger)),
+				(~dryBus[1 % ~numPairs]!1),
+				(~reverbMidBus[0 % ~numPairs]!(resonant.asInteger))], inf),
 
 			{
 				{
@@ -122,8 +122,9 @@ Handler {
 		noise = args.at(\avgflat).linlin(0.0, 0.1, 1, 3, clip:\minmax),
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax),
 		reps = rrand(dense, dense * 3),
+		granreps = rrand(0, 1),
+		choose = rrand(0, 2),
 		freq = args.at(\mainpitch).asString.pitchcps,
-		choose = rrand(0, 4),
 		atk = rrand(0.01, 0.4);
 
 		Pkill(
@@ -133,10 +134,10 @@ Handler {
 			\env, 1,
 
 			\dur, Pseq([
-				Pwhite(0.05, 0.2 * dur, (dur + 2).asInteger),
-				Pwhite(0.01, 0.02 * dur, (dur + 2).asInteger),
+				Pwhite(0.05, 0.2 * dur, 5),
+				Pwhite(0.01, 0.02 * dur, 6),
 				Pwhite(0.4, 1.2, (dur + 2).asInteger)
-			], inf),
+			], reps),
 
 			\atk, atk,
 
@@ -153,19 +154,19 @@ Handler {
 
 			\cutoff, Env(
 				[cent, cent * 2, cent / 2],
-				[(reps / 2).asInteger, (reps / 2).asInteger],
+				[1.0, 6.0],
 				\sin),
 
 			\amp, Env(
-				[0, 0.2, 0],
-				[(reps / 2).asInteger, (reps / 2).asInteger],
+				[0.01, 0.1, 0.01],
+				[1.0, 6.0],
 				\sin),
 
 			\pan, Pwhite(-1 * width, width),
 
 			\out, Pseq([
-				(~reverbShortBus!2),
-				(~reverbMidBus!3)], inf),
+				(~reverbShortBus[0 % ~numPairs]!2),
+				(~reverbMidBus[4 % ~numPairs]!3)], 6),
 
 			{
 				{
@@ -173,12 +174,12 @@ Handler {
 						|b|
 						b.free;
 					}
-				}.defer(20);
+				}.defer(160);
 			}
 
 		).play;
 
-		if (choose > 1, {
+		if ((choose == 0), {
 
 			if ((freq < 30), {
 				freq = rrand(6, 60)
@@ -194,42 +195,32 @@ Handler {
 
 				\buf, Pshuf(buf, inf),
 
-				\atk, Pwhite(1.0, 12.0),
+				\atk, Pwhite(1.0, 10.0),
 
-				\rel, Pwhite(1.0, 12.0),
+				\rel, Pwhite(1.0, 10.0),
 
 				\freq, freq,
 
-				\rate, Pseq([
-					(-1.0!(1)),
-					(1.0!(1)),
-				], (reps / 4).asInteger),
+				\rate, Pwrand([-1.0, 1.0], [1, 1], reps),
 
 				\cutoff, Env(
 					[cent, cent * 5, cent / 2],
-					[(reps / 4).asInteger, (reps / 4).asInteger],
+					[1, 10],
 					\sin),
 
 				\pan, Pwhite(-1 * width, width),
 
-				\amp, Pwhite(0.1, 0.3),
+				\amp, Pwhite(0.001, 0.02),
 
 				\out, Pseq([
-					(~reverbMidBus),
-					(~reverbLongBus),
+					(~reverbMidBus[rrand(0, 4) % ~numPairs]),
+					(~reverbLongBus[rrand(0, 4) % ~numPairs]),
 				], inf),
 
 				{
-					{
-						buf.do {
-							|b|
-							b.free;
-						}
-					}.defer(60);
 				}
 
 			).play;
-
 		});
 
 	}
@@ -263,7 +254,7 @@ Handler {
 			\rate, Pwrand(
 				[0.5, 1, 2.0, -1],
 				[2, 6, 1, 6].normalizeSum,
-				inf),
+				reps * 2),
 
 			\buf, Pshuf(buf, inf),
 
@@ -283,13 +274,13 @@ Handler {
 				\sin),
 
 			\amp, Env(
-				[0, 0.2, 0],
+				[0.01, 0.1, 0.01],
 				[(reps / 2).asInteger, (reps / 2).asInteger],
 				\sin),
 
 			\out, Pseq([
-				(~reverbShortBus!((bright + 1).asInteger)),
-				(~dryBus!(3))
+				(~reverbShortBus[rrand(0, 4) % ~numPairs]!((bright + 1).asInteger)),
+				(~dryBus[rrand(0, 4) % ~numPairs]!(3))
 				], inf),
 
 			{
@@ -329,7 +320,7 @@ Handler {
 			\rate, Pwrand(
 				[0.5, 1, 2.0, -1],
 				[2, 6, 1, 6].normalizeSum,
-				inf),
+				reps * 2),
 
 			\atk, atk,
 
@@ -344,7 +335,7 @@ Handler {
 				inf),
 
 			\amp, Env(
-				[0, 0.2, 0],
+				[0, 0.1, 0],
 				[(reps / 2).asInteger, (reps / 2).asInteger],
 				\sin),
 
@@ -354,8 +345,8 @@ Handler {
 				\sin),
 
 			\out, Pseq([
-				(~dryBus!3),
-				(~reverbShortBus!(noise.asInteger))
+				(~dryBus[0 % ~numPairs]!3),
+				(~reverbShortBus[rrand(0, 4) % ~numPairs]!(noise.asInteger))
 			], inf),
 
 			{
@@ -410,12 +401,12 @@ Handler {
 
 			\pan, Pwhite(-0.2, 0.2),
 
-			\amp, Pwhite(0.2, 0.4),
+			\amp, Pwhite(0.01, 0.1),
 
 			\out, Pseq([
-				(~dryBus!2),
-				(~reverbShortBus!1),
-				(~reverbMidBus!(freq.asInteger)),
+				(~dryBus[rrand(0, 4) % ~numPairs]!2),
+				(~reverbShortBus[4 % ~numPairs]!1),
+				(~reverbMidBus[3 % ~numPairs]!(freq.asInteger)),
 			], rrand(1, 3)),
 
 			{
@@ -470,12 +461,12 @@ Handler {
 
 			\pan, Pwhite(-1 * (freq / 2), freq / 2),
 
-			\amp, Pwhite(bright / 10 , bright / 7),
+			\amp, Pwhite(0.01, 0.08),
 
 			\out, Pseq([
-				(~drybus!(resonant.asInteger)),
-				(~reverbShortBus!(resonant.asInteger)),
-				(~reverbMidBus!2),
+				(~dryBus[3 % ~numPairs]!(resonant.asInteger)),
+				(~reverbShortBus[2 % ~numPairs]!(resonant.asInteger)),
+				(~reverbMidBus[rrand(0, 4) % ~numPairs]!2),
 			], reps),
 
 			{
@@ -497,9 +488,9 @@ Handler {
 
 		var freq = args.at(\mainpitch).asString.pitchcps,
 		choose = rrand(0, 4),
-		dense = args.at(\density).linlin(0.0, 5.0, 10, 1, clip: \minmax),
+		dense = args.at(\density).linlin(0.0, 5.0, 5, 1, clip: \minmax),
 		cent = args.at(\avgcent).linlin(0, 10000, 200, 16000, clip: \minmax),
-		reps = rrand(4, 20),
+		reps = rrand(1, 9),
 		atk = 0.1;
 
 		if ((freq < 30) || (choose < 2), {
@@ -535,12 +526,12 @@ Handler {
 
 			\pan, Pwhite(-1, 1),
 
-			\amp, Pwhite(0.1, 0.3),
+			\amp, Pwhite(0.01, 0.08),
 
 			\out, Pseq([
-				(~reverbShortBus),
-				(~reverbMidBus),
-				(~reverbLongBus),
+				(~reverbShortBus[rrand(0, 4) % ~numPairs]),
+				(~reverbMidBus[rrand(0, 4) % ~numPairs]),
+				(~reverbLongBus[rrand(0, 4) % ~numPairs]),
 			], inf),
 
 			{
@@ -562,6 +553,8 @@ Handler {
 		//args.postln;
 
 		//state = \sc;
+
+		("OK: moving to state: " + state).postln;
 
 		switch(state,
 

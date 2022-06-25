@@ -38,7 +38,7 @@ Behavior {
 
 		eventTarget = rrand(1,10); // setting first event target randomly
 
-		targets = [\sc, \so, \ma, \te, \st, \ht, \hp];
+		targets = [\sc, \so, \ma, \te, \st, \ht, \gp];
 
 		means = Dictionary[
 			\density -> 1.0,
@@ -71,7 +71,13 @@ Behavior {
 		var density = Array.fill(onsets.size - 1, {
 			|i|
 			onsets[i + 1] - onsets[i]}
-		).mean;
+		);
+
+		if (density.maxItem > ~densityMax, {
+			~doneFlag = True;
+		});
+
+		density = density.mean;
 
 		if (density.notNil == False, {
 			"WARN: no density specified".postln;
@@ -194,7 +200,7 @@ Behavior {
 		+ (windowsize_delta / 5)
 		- (percpitch_delta / 10)
 		- (avgcent_delta / 10)
-		- (avgrms_delta / 10)
+		+ (avgrms_delta / 10)
 		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
 
 		w_ht = ((weights.at(\ht) * 100)
@@ -207,7 +213,7 @@ Behavior {
 
 		w_gp = ((weights.at(\gp) * 100)
 		- (density_delta / 10)
-		+ (percpitch_delta / 5)
+		+ (percpitch_delta / 10)
 		- (avgrms_delta / 5)
 		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
 
@@ -236,7 +242,10 @@ Behavior {
 		means = theseMeans;
 		weights = theseWeights;
 
-		eventTarget = eventCtr + rrand(1, 40);
+		("weights: " + weights.asString).postln;
+		("means: " + means.asString).postln;
+
+		eventTarget = eventCtr + rrand(1, 30);
 
 		^ thisTarget // return target
 

@@ -180,6 +180,8 @@ Analysis {
 		if (detect == false,
 		// if nothing has been detected, wait for a new peak
 
+			("DEBUG: Peak = " + peak.asString + ". Thresh = "+ thresh.asString).postln;
+
 			{
 
 				if (peak > (thresh * 1.15), {
@@ -198,9 +200,10 @@ Analysis {
 				{
 					if (peak > lPeak, {
 						lPeak = peak;
-						thresh = lPeak / 2;
+						thresh = lPeak * 0.75;
 						// if (thresh < 0.05, thresh = 0.05);
-						if (thresh < 0.15, thresh = 0.15);
+						if (thresh < 0.015, thresh = 0.015);
+						if (thresh > 0.4, thresh = 0.015);
 					});
 					this.analysisFunctions(msg);
 				});

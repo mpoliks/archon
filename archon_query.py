@@ -62,8 +62,8 @@ def closest_node(input_dataframe, database_dataframe, database_tensors, audiodir
 def format_result(sample, pitch, target_audiodir):
     audiofile = sample.name
     #Takeout-safe formatting only
-    #if audiofile[:-6] != 'ms.wav': 
-        #audiofile = audiofile[:-4] + "ms.wav"
+    if audiofile[:-6] != 'ms.wav': 
+        audiofile = audiofile[:-4] + "ms.wav"
     if (pitch != "unpitched"): 
       oct = int(pitch[-1])
       pitch = pitch.replace(str(oct), "")  
@@ -100,9 +100,9 @@ if __name__ == "__main__":
     parser.add_argument("--out_port",
         type=int, default=57120, help="The port to send to")      
     parser.add_argument("--file",
-        default="/Users/marekpoliks/Desktop/ARCHON_vox/analysis_desilenced.json", help="Location of analysis file (json)")
+        default="/Users/marek_orpheus/Desktop/ARCHON_db/analysis_500ms.json", help="Location of analysis file (json)")
     parser.add_argument("--audiodb",
-        default="/Users/marekpoliks/Desktop/ARCHON_vox/", help="Location of audio database")
+        default="/Users/marek_orpheus/Desktop/ARCHON_db/", help="Location of audio database")
     args = parser.parse_args()
 
     # sets up Supercollider client and test message, if you don't see one in SC, start investigating

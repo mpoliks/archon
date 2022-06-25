@@ -18,10 +18,14 @@ If you see errors, make sure you've moved the library folder to the extensions f
 ~hardwareOutputs = 16; // number of hardware outputs - right now this is configured for stereo
 ~fr = 10; // how frequently to sample input for descriptors
 ~outputChannel = 0; // remember: SuperCollider channel 0 = mixer channel 1
+~numOutputs = 8;
+~numPairs = ~numOutputs / 2;
 
-
+//
 ~numVoices = 32;
 ~voiceCounter = 0;
+~densityMax = 30;
+~doneFlag = False;
 
 ~sampleSize = 0.5;
 ~bufList = List.new();
@@ -105,6 +109,7 @@ SynthDef(\playgran, { // granular synth
 				[0,1,0],
 				[atk, rel],
 				[1, -1]),
+			levelScale:amp,
 			doneAction:2),
 
 
@@ -132,23 +137,14 @@ SynthDef(\playgran, { // granular synth
 
 }).add;
 
-SynthDef(\audioIn, { // simple patchcord
+SynthDef(\analysisIn, { // simple patchcord
 
 	|out = 0,
-	in = 0,
-	amp = 1|
+	in = 0|
 
-	var micIn = SoundIn.ar(in, 1),
+	var micIn = SoundIn.ar(in, 1);
 
-	sig = Compander.ar(micIn,
-		micIn,
-		thresh: 0.5,
-		slopeBelow: 1.0,
-		slopeAbove: 0.25,
-		clampTime: 0.01,
-		relaxTime: 0.09);
-
-	Out.ar(out, sig * amp)
+	Out.ar(out, micIn);
 
 }).add;
 
@@ -267,11 +263,26 @@ s.sync;
 
 ~analysisBus = Bus.audio(s, 1);
 // bus for analysis - if we're doing stereo inputs need to change this
-~reverbShortBus = Bus.audio(s,2);
-~reverbMidBus = Bus.audio(s,2);
-~reverbLongBus = Bus.audio(s,2);
-~dryBus = Bus.audio(s, 1);
-~mixBus = Bus.audio(s, 1);
+~reverbShortBus = Array.fill(~numPairs,
+		{
+			Bus.audio(s, 2)
+	});
+~reverbMidBus = Array.fill(~numPairs,
+		{
+			Bus.audio(s, 2)
+	});
+~reverbLongBus = Array.fill(~numPairs,
+		{
+			Bus.audio(s, 2)
+	});
+~dryBus = Array.fill(~numPairs,
+		{
+			Bus.audio(s, 2)
+	});
+~mixBus = Array.fill(~numPairs,
+		{
+			Bus.audio(s, 2)
+	});
 
 ~inputGroup = Group.tail(s);
 ~analysisGroup = Group.tail(s);
@@ -293,17 +304,9 @@ Pdef(\pulsar, Pbind(
 	));
 
 Synth(
-	\audioIn, [
+	\analysisIn, [
 		\out, ~analysisBus.index,
 		\in, 0
-	], ~inputGroup
-);
-
-~violinOut = Synth(
-	\audioIn, [
-		\out, ~reverbShortBus.index,
-		\in, 0,
-		\amp, 0.2
 	], ~inputGroup
 );
 
@@ -313,52 +316,66 @@ Synth(
 	], ~analysisGroup
 );
 
-~reverbShortSynth = Synth(
-	\hdVerb, [
-		\in, ~reverbShortBus,
-		\decay, 0.5,
-		\predelay, 0.02,
-		\lpf1, 10000,
-		\lpf2, 14000,
-		\out, ~mixBus
-	], ~fxGroup
-);
+~reverbShortSynth = Array.fill(~numPairs, {
+	|i|
+	Synth(
+		\hdVerb, [
+			\in, ~reverbShortBus[i],
+			\decay, 0.5,
+			\predelay, 0.02,
+			\lpf1, 10000,
+			\lpf2, 14000,
+			\out, ~mixBus[i]
+		], ~fxGroup
+	)
+});
 
-~reverbMidSynth = Synth(
-	\hdVerb, [
-		\in, ~reverbMidBus,
-		\decay, 3.0,
-		\predelay, 0.1,
-		\lpf1, 10000,
-		\lpf2, 14000,
-		\out, ~mixBus
-	], ~fxGroup
-);
+~reverbMidSynth = Array.fill(~numPairs, {
+	|i|
+	Synth(
+		\hdVerb, [
+			\in, ~reverbMidBus[i],
+			\decay, 3.0,
+			\predelay, 0.1,
+			\lpf1, 10000,
+			\lpf2, 14000,
+			\out, ~mixBus[i]
+		], ~fxGroup
+	);
+});
 
-~reverbLongSynth = Synth(
-	\freezeVerb, [
-		\in, ~reverbLongBus,
-		\decay, 13,
-		\predelay, 1.0,
-		\lpf, 3000,
-		\out, ~mixBus
-	], ~fxGroup
-);
+~reverbLongSynth = Array.fill(~numPairs, {
+	|i|
+	Synth(
+		\freezeVerb, [
+			\in, ~reverbLongBus[i],
+			\decay, 13,
+			\predelay, 1.0,
+			\lpf, 3000,
+			\out, ~mixBus[i]
+		], ~fxGroup
+	);
+});
 
-~drySynth = Synth(
-	\dryIO, [
-		\in, ~dryBus,
-		\out, ~mixBus,
-	], ~fxGroup
-);
+~drySynth = Array.fill(~numPairs, {
+	|i|
+	Synth(
+		\dryIO, [
+			\in, ~dryBus[i],
+			\out, ~mixBus[i],
+		], ~fxGroup
+	);
+});
 
-~mixSynth = Synth(
-	\mixIO, [
-		\in, ~mixBus,
-		\out, ~outputChannel
-	], ~mixGroup
-
-);
+~mixSynth = Array.fill(~numPairs, {
+	|i|
+	Synth(
+		\mixIO, [
+			\in, ~mixBus[i],
+			\out, ~outputChannel + (2 * i)
+		], ~mixGroup
+	);
+});
 
 s.sync;
 
@@ -427,69 +444,54 @@ OSCdef(
 
 	var args = ~behavior.receiver(msg),
 	win = args[1].at(\windowsize).asFloat.linlin(0, 15, 1, 5, clip: \minmax),
-	dense = args[1].at(\density).asFloat.linlin(0, 15, 0.01, 15, clip: \minmax),
+	dense = args[1].at(\density).asFloat.linlin(0, 25, 0.01, 25, clip: \minmax),
 	dur = (win * dense).linlin(0, 15, 0.01, 15, clip: \minmax);
 	("density: " + dense.asString).postln;
 	("windowsize: " + win.asString).postln;
 
-	Pdef(\pulsar,
+	if (~doneFlag == True, {
+
+		"WARN: Piece Done".postln;
+		Pdef(\pulsar,
 			Pbind(
 				\instrument, \pulse,
-				\dur, Pwhite((dur / 3), (dur + 8))
+				\dur, 300
+			)
+		);
+	},
+	{
+
+		Pdef(\pulsar,
+			Pbind(
+				\instrument, \pulse,
+				\dur, Pwhite((dur / 3), (dur + 9))
 			)
 		);
 
-	4.do({
-		|c|
-		~voices[((~voiceCounter + c + 1) % ~numVoices)]
+		4.do({
+			|c|
+			~voices[((~voiceCounter + c + 1) % ~numVoices)]
 			.settings(
 				args); // sets Handler settings with the Behavior module
-		("OK: Setting Args for Voice" + ((~voiceCounter + 3 + c) % ~numVoices).asString ++ ".").postln;
+			("OK: Setting Args for Voice" + ((~voiceCounter + c) % ~numVoices).asString ++ ".").postln;
 		});
+	});
 
 }, '/behavior');
-
-
-Window.closeAll;
-
-s.meter (~hardwareInputs, ~hardwareOutputs);
-
-~w = Window("GUI Controls", Rect(0,-100,650,550))
-	.front
-	.alwaysOnTop_(true);
-	~w.view.decorator_(
-		FlowLayout(
-			~w.bounds,
-			10@10,
-			10@10));
-
-
-~vlnSlider = EZSlider.new(
-	~w,
-	Rect(20, 160, 200, 30),
-	"Violin Output Level",
-	ControlSpec.new(
-		0.0,
-		1.0,
-		\lin,
-		0.01,
-		0.2,
-		""), {
-		|slider|
-		~violinOut.set(
-			\amp,
-			slider.value);
-		});
-	}
-);
-
 
 "OK: Ready!".postln;
 
 Pdef(\pulsar).play;
 
+Window.closeAll;
+
+s.meter (~hardwareInputs, ~hardwareOutputs);
 //s.record(numChannels:2); // optional to record output
 
 }
 
 )
+
+
+//TODO: add state "next" button
+//TODO: add NOT DONE button
