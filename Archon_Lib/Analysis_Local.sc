@@ -27,6 +27,8 @@ Analysis {
 	thresh = 0.01, // amplitude setting for envelope detection
 	lPeak = 0.01, // local peak for envelope calculation
 
+	deathclock = 0,
+
 	dict; // running dictionary of events
 
 	*new {
@@ -177,15 +179,25 @@ Analysis {
 
 		var peak = msg[3]; // grabbing peak amplitude data
 
+		if (peak < 0.01, {
+			deathclock = deathclock + 1;
+			if (deathclock > 100, {
+				~doneFlag = True;
+			});
+		});
+
+
 		if (detect == false,
 		// if nothing has been detected, wait for a new peak
 
-			("DEBUG: Peak = " + peak.asString + ". Thresh = "+ thresh.asString).postln;
+//("DEBUG: Peak = " + peak.asString + ". Thresh = "+ thresh.asString).postln;
 
 			{
 
 				if (peak > (thresh * 1.15), {
 					detect = true;
+					deathclock = 0;
+					~doneFlag = False;
 					this.onsetFunctions();
 				});
 			},

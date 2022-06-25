@@ -30,6 +30,9 @@ If you see errors, make sure you've moved the library folder to the extensions f
 ~sampleSize = 0.5;
 ~bufList = List.new();
 
+~targetOverride = False;
+~specTarget = \sc;
+
 // server settings, don't mess with these:
 ServerOptions.devices;
 Server.default.options.numInputBusChannels = ~hardwareInputs;
@@ -486,12 +489,32 @@ Pdef(\pulsar).play;
 Window.closeAll;
 
 s.meter (~hardwareInputs, ~hardwareOutputs);
-//s.record(numChannels:2); // optional to record output
+
+~w = Window("GUI Controls", Rect(0,-100,400,150))
+	.front
+	.alwaysOnTop_(true);
+	~w.view.decorator_(
+		FlowLayout(
+			~w.bounds,
+			10@10,
+			10@10));
+
+
+b = Button(w, Rect(20, 20, 340, 30))
+	.states_([
+		[\so, Color.black, Color.red],
+		[\sc, Color.white, Color.black],
+		[\ht, Color.red, Color.white],
+		[\gp, Color.blue, Color.clear]
+	])
+	.action_({
+		|state|
+		~targetOverride = True;
+		~specTarget = state.value;
+	});
+
+//s.record(numChannels:~numOutputs); // optional to record output
 
 }
 
 )
-
-
-//TODO: add state "next" button
-//TODO: add NOT DONE button

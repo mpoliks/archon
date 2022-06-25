@@ -306,7 +306,7 @@ Handler {
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 1.0, 4.0, clip: \minmax),
 		noise = args.at(\avgflat).linlin(0.0, 0.1, 1, 3, clip:\minmax),
 		cutoff = rrand(200 * velocity, 800 * velocity),
-		reps = rrand(2, 20).asInteger,
+		reps = rrand(velocity, velocity * 5).asInteger,
 		atk = rrand(0.01, variance + 0.1);
 
 		Pkill(
@@ -347,6 +347,73 @@ Handler {
 			\out, Pseq([
 				(~dryBus[0 % ~numPairs]!3),
 				(~reverbShortBus[rrand(0, 4) % ~numPairs]!(noise.asInteger))
+			], inf),
+
+			{
+				{
+					buf.do {
+						|b|
+						b.free;
+					}
+				}.defer(20);
+			}
+
+		).play
+	}
+
+	angelPlayer { // high-pitched, warbling, long envelope
+
+		|buf|
+
+		var temp = args.at(\density).linlin(0.0, 5.0, 0.1, 3.0, clip: \minmax),
+		variance = args.at(\windowsize).linlin(0.0, 3.0, 0.0, 0.3, clip: \minmax),
+		cent = args.at(\avgcent).linlin(0, 10000, 16000, 200, clip: \minmax),
+		bright = args.at(\avgrolloff).linlin(0, 12000, 200, 10000, clip: \minmax),
+		velocity = args.at(\avgrms).linlin(0.0, 1.0, 1.0, 4.0, clip: \minmax),
+		noise = args.at(\avgflat).linlin(0.0, 0.1, 1, 3, clip:\minmax),
+		cutoff = rrand(100 * velocity, 400 * velocity),
+		rate = rrand(1, 2) * 2,
+		reps = rrand(noise * 2, noise * 8).asInteger,
+		atk = (0.5 * (~sampleSize / rate)),
+
+		Pkill(
+
+			\instrument, \playback,
+
+			\env, 1,
+
+			\dur, Pwhite(temp / 2.01, (temp / 2), inf),
+
+			\rate, Pwrand(
+				[rate, -rate],
+				[2, 2].normalizeSum,
+				reps),
+
+			\atk, atk,
+
+			\rel, ~sampleSize - atk,
+
+			\buf, Pshuf(buf, inf),
+
+			\pan, Pwhite(
+				rrand(-1, 1),
+				(rrand(-1, 1) + 0.2)
+					.linlin(-1.0, 1.0, -1.0, 1.0, clip: \minmax),
+				inf),
+
+			\amp, Env(
+				[0, 0.1, 0],
+				[rrand(3, 10), rrand(3, 10)],
+				\sin),
+
+			\cutoff, Env(
+				[cutoff / 2, cutoff * 2, cutoff / 2],
+				[rrand(3, 10), rrand(3, 10)],
+				\sin),
+
+			\out, Pseq([
+				(~reverblongtBus[rrand(0, 4) % ~numPairs]!2),
+				(~reverbShortBus[rrand(0, 4) % ~numPairs]!8)
 			], inf),
 
 			{
@@ -572,6 +639,10 @@ Handler {
 
 			\te, {
 				this.techPlayer(buf)
+			},
+
+			\an, {
+				this.angelPlayer(buf)
 			},
 
 			\st, {
