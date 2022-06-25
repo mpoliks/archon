@@ -121,7 +121,7 @@ Handler {
 		resonant = args.at(\percpitch).linlin(0.0, 1.0, 1, 4, clip: \minmax),
 		noise = args.at(\avgflat).linlin(0.0, 0.1, 1, 3, clip:\minmax),
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax),
-		reps = rrand(dense, dense * 3),
+		reps = rrand(dense, dense * 7),
 		granreps = rrand(0, 1),
 		choose = rrand(0, 2),
 		freq = args.at(\mainpitch).asString.pitchcps,
@@ -136,7 +136,7 @@ Handler {
 			\dur, Pseq([
 				Pwhite(0.05, 0.2 * dur, 5),
 				Pwhite(0.01, 0.02 * dur, 6),
-				Pwhite(0.4, 1.2, (dur + 2).asInteger)
+				Pwhite(0.4, 2.2, (dur + 2).asInteger)
 			], reps),
 
 			\atk, atk,
@@ -237,7 +237,7 @@ Handler {
 		resonant = args.at(\percpitch).linlin(0.0, 1.0, 7, 2, clip: \minmax),
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax),
 		cutoff = rrand(200 * velocity, 800 * velocity),
-		reps = rrand(bright, bright * 20),
+		reps = rrand(10, bright * 50),
 		atk = 0.1;
 
 		Pkill(
@@ -270,12 +270,12 @@ Handler {
 
 			\cutoff, Env(
 				[cent, cent * 2, cent / 2],
-				[(reps / 2).asInteger, (reps / 2).asInteger],
+				[rrand(2, 10), rrand(2, 40)],
 				\sin),
 
 			\amp, Env(
 				[0.01, 0.1, 0.01],
-				[(reps / 2).asInteger, (reps / 2).asInteger],
+				[rrand(2, 10), rrand(2, 40)],
 				\sin),
 
 			\out, Pseq([
@@ -306,7 +306,7 @@ Handler {
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 1.0, 4.0, clip: \minmax),
 		noise = args.at(\avgflat).linlin(0.0, 0.1, 1, 3, clip:\minmax),
 		cutoff = rrand(200 * velocity, 800 * velocity),
-		reps = rrand(velocity, velocity * 5).asInteger,
+		reps = rrand(10, 35).asInteger,
 		atk = rrand(0.01, variance + 0.1);
 
 		Pkill(
@@ -372,9 +372,9 @@ Handler {
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 1.0, 4.0, clip: \minmax),
 		noise = args.at(\avgflat).linlin(0.0, 0.1, 1, 3, clip:\minmax),
 		cutoff = rrand(100 * velocity, 400 * velocity),
-		rate = rrand(1, 2) * 2,
-		reps = rrand(noise * 2, noise * 8).asInteger,
-		atk = (0.5 * (~sampleSize / rate)),
+		rate = (rrand(1, 2) * 2),
+		reps = rrand(16, 80).asInteger,
+		atk = (0.5 * (~sampleSize / rate));
 
 		Pkill(
 
@@ -382,16 +382,16 @@ Handler {
 
 			\env, 1,
 
-			\dur, Pwhite(temp / 2.01, (temp / 2), inf),
+			\dur, Pwhite(0.001, 0.1, inf),
 
 			\rate, Pwrand(
-				[rate, -rate],
+				[rate, (-1 * rate)],
 				[2, 2].normalizeSum,
 				reps),
 
 			\atk, atk,
 
-			\rel, ~sampleSize - atk,
+			\rel, (~sampleSize - (atk + 0.1)),
 
 			\buf, Pshuf(buf, inf),
 
@@ -399,21 +399,21 @@ Handler {
 				rrand(-1, 1),
 				(rrand(-1, 1) + 0.2)
 					.linlin(-1.0, 1.0, -1.0, 1.0, clip: \minmax),
-				inf),
+				reps),
 
 			\amp, Env(
 				[0, 0.1, 0],
-				[rrand(3, 10), rrand(3, 10)],
+				[rrand(4, 10), rrand(6, 14)],
 				\sin),
 
 			\cutoff, Env(
-				[cutoff / 2, cutoff * 2, cutoff / 2],
-				[rrand(3, 10), rrand(3, 10)],
+				[cutoff, cutoff * 4, cutoff / 2],
+				[rrand(8, 12), rrand(8, 10)],
 				\sin),
 
 			\out, Pseq([
-				(~reverblongtBus[rrand(0, 4) % ~numPairs]!2),
-				(~reverbShortBus[rrand(0, 4) % ~numPairs]!8)
+				(~reverbLongBus[rrand(0, 4) % ~numPairs]),
+				(~reverbShortBus[rrand(0, 4) % ~numPairs]!4)
 			], inf),
 
 			{
@@ -422,7 +422,7 @@ Handler {
 						|b|
 						b.free;
 					}
-				}.defer(20);
+				}.defer(40);
 			}
 
 		).play
@@ -521,7 +521,7 @@ Handler {
 
 			\cutoff, Env(
 				[bright * 1000, bright * 2000, bright * 500],
-				[rrand(0.1, 0.5), rrand(1, 9)],
+				[rrand(0.1, 3), rrand(1, 19)],
 				\sin),
 
 			\buf, Pshuf(buf, inf),
@@ -557,11 +557,11 @@ Handler {
 		choose = rrand(0, 4),
 		dense = args.at(\density).linlin(0.0, 5.0, 5, 1, clip: \minmax),
 		cent = args.at(\avgcent).linlin(0, 10000, 200, 16000, clip: \minmax),
-		reps = rrand(1, 9),
+		reps = rrand(1, 5),
 		atk = 0.1;
 
 		if ((freq < 30) || (choose < 2), {
-			freq = rrand(6, 60)
+			freq = rrand(2, 45)
 		});
 
 		Pkill(
@@ -619,9 +619,9 @@ Handler {
 
 		//args.postln;
 
-		//state = \sc;
+		//state = \an;
 
-		("OK: moving to state: " + state).postln;
+		("OK: Playing State: " + state + ".").postln;
 
 		switch(state,
 

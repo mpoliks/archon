@@ -72,15 +72,9 @@ Behavior {
 		var density = Array.fill(onsets.size - 1, {
 			|i|
 			onsets[i + 1] - onsets[i]}
-		);
+		).mean;
 
-		if (density.maxItem > ~densityMax, {
-			~doneFlag = True;
-		});
-
-		density = density.mean;
-
-		if (density.notNil == False, {
+		if (density.notNil == false, {
 			"WARN: no density specified".postln;
 			density = rrand(1.0, 6.0);
 		});
@@ -153,7 +147,7 @@ Behavior {
 			.linlin(0, 2.0, 100, -100, clip: nil),
 		windowsize_delta = (theseMeans.at(\windowsize) / means.at(\windowsize))
 			.linlin(0, 2.0, -100, 100, clip: nil),
-		percpitch_delta = (theseMeans.at(\percpitch) / means.at(\percpitch))
+		percpitch_delta = (theseMeans.at(\percpitch) / (means.at(\percpitch) + 0.1))
 			.linlin(0, 2.0, -100, 100, clip: nil),
 		avgcent_delta = (theseMeans.at(\avgcent) / means.at(\avgcent))
 			.linlin(0, 2.0, -100, 100, clip: nil),
@@ -196,7 +190,7 @@ Behavior {
 		+ (avgrms_delta / 10)
 		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
 
-		w_te = ((weights.at(\te) * 100)
+		w_an = ((weights.at(\te) * 100)
 		- (density_delta / 5)
 		+ (windowsize_delta / 5)
 		+ (avgcent_delta / 10)
@@ -208,9 +202,9 @@ Behavior {
 		- (density_delta / 5)
 		+ (windowsize_delta / 5)
 		- (percpitch_delta / 10)
-		- (avgcent_delta / 10)
+		- (avgcent_delta / 5)
 		+ (avgrms_delta / 10)
-		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
+		).linlin(0, 100, 0.0, 0.85, clip: \minmax),
 
 		w_ht = ((weights.at(\ht) * 100)
 		- (density_delta / 10)
@@ -221,10 +215,10 @@ Behavior {
 		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
 
 		w_gp = ((weights.at(\gp) * 100)
-		- (density_delta / 10)
+		- (density_delta / 5)
 		+ (percpitch_delta / 10)
-		- (avgrms_delta / 5)
-		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
+		- (avgrms_delta / 10)
+		).linlin(0, 100, 0.0, 0.85, clip: \minmax),
 
 		// setting target
 		calib = [w_sc, w_so, w_ma, w_te, w_an, w_st, w_ht, w_gp],
@@ -243,7 +237,7 @@ Behavior {
 			\so -> recalib[1],
 			\ma -> recalib[2],
 			\te -> recalib[3],
-			\an -> recalib[4].
+			\an -> recalib[4],
 			\st -> recalib[5],
 			\ht -> recalib[6],
 			\gp -> recalib[7]
@@ -255,9 +249,10 @@ Behavior {
 		("weights: " + weights.asString).postln;
 		("means: " + means.asString).postln;
 
-		if (~targetOverride == True, {
+		if (~targetOverride == true, {
 			// to nudge the system toward a new playback machine and to reset weights
 
+			("WARN: Override Engaged, moving toward" + ~specTarget).postln;
 			thisTarget = ~specTarget;
 
 			means = Dictionary[
@@ -282,7 +277,7 @@ Behavior {
 				\gp -> 0.1
 			];
 
-			~targetOverride = False;
+			~targetOverride = false;
 		});
 
 		eventTarget = eventCtr + rrand(1, 30);
@@ -354,7 +349,7 @@ Behavior {
 				prevTarget = target;
 				prevEvent = eventTarget;
 				target = this.targetprocessing();
-				("OK: Moving Toward" + target.asString + "!").postln;
+				("OK: Moving To State:" + target.asString + "!").postln;
 		});
 
 		if (eventCtr > 3, // playback machine args generation
@@ -366,7 +361,9 @@ Behavior {
 			}
 		);
 
+		("OK: Event No." ++ eventCtr.asString + "complete, next target: " ++ eventTarget.asString ++".").postln;
 		eventCtr = eventCtr + 1;
+
 
 		^ [selectTarget, returnArgs]
 

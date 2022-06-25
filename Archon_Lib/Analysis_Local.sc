@@ -84,7 +84,7 @@ Analysis {
 			})
 		};
 
-		if (plist.size > (dict.values.size / 2), {
+		if (plist.size > (dict.values.size / 4), {
 			// if there's a preponderance of pitched material, return pitch
 			pitch = plist.median.midipitch;
 		},
@@ -181,8 +181,11 @@ Analysis {
 
 		if (peak < 0.01, {
 			deathclock = deathclock + 1;
-			if (deathclock > 100, {
-				~doneFlag = True;
+			if (deathclock > 130, {
+				if (~doneFlag == false, {
+					"WARN: writing doneFlag true!".postln
+				});
+				~doneFlag = true;
 			});
 		});
 
@@ -197,7 +200,7 @@ Analysis {
 				if (peak > (thresh * 1.15), {
 					detect = true;
 					deathclock = 0;
-					~doneFlag = False;
+					~doneFlag = false;
 					this.onsetFunctions();
 				});
 			},

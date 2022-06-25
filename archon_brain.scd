@@ -25,12 +25,12 @@ If you see errors, make sure you've moved the library folder to the extensions f
 ~numVoices = 32;
 ~voiceCounter = 0;
 ~densityMax = 30;
-~doneFlag = False;
+~doneFlag = false;
 
 ~sampleSize = 0.5;
 ~bufList = List.new();
 
-~targetOverride = False;
+~targetOverride = false;
 ~specTarget = \sc;
 
 // server settings, don't mess with these:
@@ -314,6 +314,13 @@ Synth(
 );
 
 Synth(
+	\analysisIn, [
+		\out, ~outputChannel + ~numOutputs,
+		\in, 0
+	], ~inputGroup
+);
+
+Synth(
 	\inputAnalysis, [
 		\in, ~analysisBus.index
 	], ~analysisGroup
@@ -406,21 +413,22 @@ OSCdef(
 OSCdef(
 	\pulselistener, {
 
-	if (s.avgCPU < 60,
-
-		{
-		~voiceCounter = (~voiceCounter + 1) % ~numVoices;
-		("OK: Selecting Voice" + ~voiceCounter.asString ++ ".").postln;
-		if (~bufList.size > 0,
-			{
-				~voices[~voiceCounter].msg_handler(~bufList.scramble[0], s);
-				// sends Python output to Handler module
-			});
+	if (s.avgCPU > 60, {
+			"WARN: CPU High, Taking a Short Break".postln;
 		},
 		{
-		"WARN: CPU High, Taking a Short Break".postln;
-		}
-	);
+			if (~doneFlag == true, {
+			"WARN: Piece Done!".postln;
+				},
+				{
+					~voiceCounter = (~voiceCounter + 1) % ~numVoices;
+					("OK: Selecting Voice" + ~voiceCounter.asString ++ ".").postln;
+					if (~bufList.size > 0, {
+						~voices[~voiceCounter].msg_handler(~bufList.scramble[0], s);
+						// sends Python output to Handler module
+					});
+				});
+			});
 
 }, '/pulse');
 
@@ -452,32 +460,18 @@ OSCdef(
 	("density: " + dense.asString).postln;
 	("windowsize: " + win.asString).postln;
 
-	if (~doneFlag == True, {
+	Pdef(\pulsar,
+		Pbind(
+			\instrument, \pulse,
+			\dur, Pwhite((dur / 3), (dur + 8))
+		)
+	);
 
-		"WARN: Piece Done".postln;
-		Pdef(\pulsar,
-			Pbind(
-				\instrument, \pulse,
-				\dur, 300
-			)
-		);
-	},
-	{
-
-		Pdef(\pulsar,
-			Pbind(
-				\instrument, \pulse,
-				\dur, Pwhite((dur / 3), (dur + 9))
-			)
-		);
-
-		4.do({
-			|c|
-			~voices[((~voiceCounter + c + 1) % ~numVoices)]
-			.settings(
-				args); // sets Handler settings with the Behavior module
-			("OK: Setting Args for Voice" + ((~voiceCounter + c) % ~numVoices).asString ++ ".").postln;
-		});
+	4.do({
+		|c|
+		~voices[((~voiceCounter + c + 1) % ~numVoices)]
+		.settings(
+			args); // sets Handler settings with the Behavior module
 	});
 
 }, '/behavior');
@@ -488,9 +482,9 @@ Pdef(\pulsar).play;
 
 Window.closeAll;
 
-s.meter (~hardwareInputs, ~hardwareOutputs);
+s.meter (~hardwareInputs, ~numOutputs + 1);
 
-~w = Window("GUI Controls", Rect(0,-100,400,150))
+~w = Window("GUI Controls", Rect(0,-100,360,200))
 	.front
 	.alwaysOnTop_(true);
 	~w.view.decorator_(
@@ -500,20 +494,64 @@ s.meter (~hardwareInputs, ~hardwareOutputs);
 			10@10));
 
 
-b = Button(w, Rect(20, 20, 340, 30))
+b = Button(~w, Rect(20, 20, 340, 30))
 	.states_([
-		[\so, Color.black, Color.red],
-		[\sc, Color.white, Color.black],
-		[\ht, Color.red, Color.white],
-		[\gp, Color.blue, Color.clear]
+		["Engage SC Override", Color.black, Color.yellow],
 	])
 	.action_({
 		|state|
-		~targetOverride = True;
-		~specTarget = state.value;
+		~targetOverride = true;
+		switch(state.value,
+				0, {
+					~specTarget = \sc;
+				},
+		);
 	});
 
-//s.record(numChannels:~numOutputs); // optional to record output
+b = Button(~w, Rect(20, 20, 340, 30))
+	.states_([
+		["Engage ST Override", Color.black, Color.red],
+	])
+	.action_({
+		|state|
+		~targetOverride = true;
+		switch(state.value,
+				0, {
+					~specTarget = \st;
+				},
+		);
+	});
+
+b = Button(~w, Rect(20, 20, 340, 30))
+	.states_([
+		["Engage SO Override", Color.black, Color.yellow],
+	])
+	.action_({
+		|state|
+		~targetOverride = true;
+		switch(state.value,
+				0, {
+					~specTarget = \so;
+				},
+		);
+	});
+
+b = Button(~w, Rect(20, 20, 340, 30))
+	.states_([
+		["Engage GP Override", Color.black, Color.red],
+	])
+	.action_({
+		|state|
+		~targetOverride = true;
+		switch(state.value,
+				0, {
+					~specTarget = \gp;
+				},
+		);
+	});
+
+
+s.record(numChannels:(~numOutputs + 1)); // optional to record output
 
 }
 
