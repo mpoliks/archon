@@ -95,6 +95,38 @@ SynthDef(\playback, { // playback synth
 
 }).add;
 
+SynthDef(\playbackHP, { // playback synth
+	|rate = 1,
+	atk = 0.1,
+	rel = 0.4,
+	cutoff = 500,
+	pan = 0,
+	buf,
+	rq = 4.0,
+	amp = 1.0,
+	out|
+
+	var sig = PlayBuf.ar(
+		1,
+		buf,
+		BufRateScale.ir(buf) * rate,
+		doneAction: 2),
+
+	env = EnvGen.kr(
+			Env.new(
+				[0,1,0],
+				[atk, rel],
+				[1, -1]),
+			doneAction:2);
+
+	sig = HPF.ar(sig, cutoff);
+
+	sig = Pan2.ar(sig, pan, amp);
+
+	Out.ar(out, sig * env);
+
+}).add;
+
 SynthDef(\playgran, { // granular synth
 		|out = 0,
 		freq = 10,
@@ -143,9 +175,11 @@ SynthDef(\playgran, { // granular synth
 SynthDef(\analysisIn, { // simple patchcord
 
 	|out = 0,
-	in = 0|
+	in = 0,
+	amp = 1.0|
 
 	var micIn = SoundIn.ar(in, 1);
+	micIn = micIn * amp;
 
 	Out.ar(out, micIn);
 
@@ -463,7 +497,7 @@ OSCdef(
 	Pdef(\pulsar,
 		Pbind(
 			\instrument, \pulse,
-			\dur, Pwhite((dur / 3), (dur + 8))
+			\dur, Pwhite((dur / 4), (dur + 8))
 		)
 	);
 
@@ -549,7 +583,6 @@ b = Button(~w, Rect(20, 20, 340, 30))
 				},
 		);
 	});
-
 
 s.record(numChannels:(~numOutputs + 1)); // optional to record output
 

@@ -84,7 +84,7 @@ Analysis {
 			})
 		};
 
-		if (plist.size > (dict.values.size / 4), {
+		if (plist.size > 0, {
 			// if there's a preponderance of pitched material, return pitch
 			pitch = plist.median.midipitch;
 		},
@@ -187,6 +187,9 @@ Analysis {
 				});
 				~doneFlag = true;
 			});
+		},
+		{
+			deathclock = 0;
 		});
 
 
@@ -207,7 +210,8 @@ Analysis {
 
 		//if it has been detected, start pumping descriptors in to the dict
 			{
-				if (((peak < thresh) && (dict.values.size > 0)), {
+				if ((((peak < thresh) && (dict.values.size > 0)))
+				||  ((Date.getDate.rawSeconds - onsetTime.asFloat > 10) && (dict.values.size > 0)), {
 					detect = false;
 					this.offsetFunctions();
 				},

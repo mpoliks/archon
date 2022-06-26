@@ -218,7 +218,7 @@ Behavior {
 		- (density_delta / 5)
 		+ (percpitch_delta / 10)
 		- (avgrms_delta / 10)
-		).linlin(0, 100, 0.0, 0.85, clip: \minmax),
+		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
 
 		// setting target
 		calib = [w_sc, w_so, w_ma, w_te, w_an, w_st, w_ht, w_gp],

@@ -217,7 +217,7 @@ Handler {
 					(~reverbLongBus[rrand(0, 4) % ~numPairs]),
 				], inf),
 
-				{
+				{ //empty
 				}
 
 			).play;
@@ -440,8 +440,8 @@ Handler {
 			.pitchcps
 			.linlin(0, 10000, 1, 10, clip: \minmax),
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax),
+		choose = rrand(0, 4),
 		atk = 0.1;
-
 
 		Pkill(
 
@@ -474,7 +474,7 @@ Handler {
 				(~dryBus[rrand(0, 4) % ~numPairs]!2),
 				(~reverbShortBus[4 % ~numPairs]!1),
 				(~reverbMidBus[3 % ~numPairs]!(freq.asInteger)),
-			], rrand(1, 3)),
+			], rrand(2, 5)),
 
 			{
 				{
@@ -482,10 +482,49 @@ Handler {
 						|b|
 						b.free;
 					}
-				}.defer(20);
+				}.defer(90);
 			}
 
-		).play
+		).play;
+
+		if (choose >= 2, {
+
+			Pkill(
+
+				\instrument, \playbackHP,
+
+				\env, 1,
+
+				\dur, Pwhite(0.01, 2.0),
+
+				\atk, 0.2 * (1 / (rate * 2)),
+
+				\rate, rate * 2,
+
+				\rel, 0.5 * (1 / (rate * 2)),
+
+				\cutoff, Env(
+					[rrand(2500, 6000), rrand(6000, 16000), rrand(2500, 6000)],
+					[rrand(0.1, 0.5), rrand(1, 9)],
+					\sin),
+
+				\buf, Pshuf(buf, inf),
+
+				\pan, Pwhite(-1, 1),
+
+				\amp, Pwhite(0.01, 0.2),
+
+				\out, Pseq([
+					(~dryBus[rrand(0, 4) % ~numPairs]!2),
+					(~dryBus[4 % ~numPairs]!1),
+					(~reverbMidBus[rrand(0, 4) % ~numPairs]!2),
+				], rrand(1, 4)),
+
+				{ // empty
+				}
+
+			).play;
+		})
 	}
 
 	halftimePlayer { // stretched audio highly reactive to pitched information
@@ -499,7 +538,7 @@ Handler {
 		resonant = args.at(\percpitch).linlin(0.0, 1.0, 7, 2, clip: \minmax),
 		bright = args.at(\avgrolloff).linlin(0, 12000, 1, 5, clip: \minmax),
 		velocity = args.at(\avgrms).linlin(0.0, 1.0, 1.0, 3.0, clip: \minmax),
-		reps = rrand(2, 25).asInteger,
+		reps = rrand(6, 35).asInteger,
 		atk = 0.1;
 
 		Pkill(
@@ -521,7 +560,7 @@ Handler {
 
 			\cutoff, Env(
 				[bright * 1000, bright * 2000, bright * 500],
-				[rrand(0.1, 3), rrand(1, 19)],
+				[rrand(0.1, 3), rrand(4, 19)],
 				\sin),
 
 			\buf, Pshuf(buf, inf),
@@ -558,6 +597,9 @@ Handler {
 		dense = args.at(\density).linlin(0.0, 5.0, 5, 1, clip: \minmax),
 		cent = args.at(\avgcent).linlin(0, 10000, 200, 16000, clip: \minmax),
 		reps = rrand(1, 5),
+		rates = [0.125, 0.25, 0.5, 1.0],
+		bright = args.at(\avgrolloff).linlin(500, 12000, 0, 2, clip: \minmax),
+		rate = rates[bright.asInteger],
 		atk = 0.1;
 
 		if ((freq < 30) || (choose < 2), {
@@ -610,7 +652,49 @@ Handler {
 				}.defer(60);
 			}
 
-		).play
+		).play;
+
+		if (choose >= 3, {
+
+			Pkill(
+
+				\instrument, \playbackHP,
+
+				\env, 1,
+
+				\dur, Pwhite(0.01, 4.0),
+
+				\atk, 0.2 * (1 / rate),
+
+				\rate, rate,
+
+				\rel, 0.5 * (1 / rate),
+
+				\cutoff, Env(
+					[cent / 2, rrand(4000, 16000), cent / 2],
+					[rrand(1, 3), rrand(1, 9)],
+					\sin),
+
+				\buf, Pshuf(buf, inf),
+
+				\pan, (dense / 5) * rrand(-1, 1),
+
+				\amp, Env(
+					[0.01, rrand(0.4, 1.0),  0.01],
+					[rrand(1, 3), rrand(1, 9)],
+					\sin),
+
+				\out, Pseq([
+					(~dryBus[rrand(0, 4) % ~numPairs]!2),
+					(~dryBus[4 % ~numPairs]!1),
+					(~reverbLongBus[rrand(0, 4) % ~numPairs])
+				], rrand(3, 5)),
+
+				{ // empty
+				}
+
+			).play;
+		});
 	}
 
 	stateMachine { // function that relays handler buffer into playback machines
