@@ -45,7 +45,20 @@ Behavior {
 
 		eventTarget = rrand(1,10); // setting first event target randomly
 
-		targets = [\sc, \so, \ma, \te, \an, \hp, \st, \ht, \cp, \gp];
+		targets = [
+			\sc,
+			\so,
+			\ma,
+			\te,
+			\ry,
+			\an,
+			\hp,
+			\st,
+			\ht,
+			\gl,
+			\cp,
+			\gp
+		];
 
 		means = Dictionary[
 			\density -> 1.0,
@@ -63,10 +76,12 @@ Behavior {
 			\so -> 0,
 			\ma -> 0,
 			\te -> 0,
+			\ry -> 0,
 			\an -> 0,
 			\hp -> 0,
 			\st -> 0,
 			\ht -> 0,
+			\gl -> 0,
 			\cp -> 0,
 			\gp -> 0
 		];
@@ -199,6 +214,14 @@ Behavior {
 		+ (avgrms_delta / 10)
 		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
 
+		w_ry = ((weights.at(\ry) * 100)
+		+ (density_delta / 5)
+		- (windowsize_delta / 5)
+		+ (avgcent_delta / 10)
+		+ (avgrolloff_delta / 10)
+		+ (avgrms_delta / 10)
+		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
+
 		w_an = ((weights.at(\an) * 100)
 		- (density_delta / 5)
 		+ (windowsize_delta / 5)
@@ -221,7 +244,7 @@ Behavior {
 		- (percpitch_delta / 10)
 		- (avgcent_delta / 5)
 		+ (avgrms_delta / 10)
-		).linlin(0, 100, 0.0, 0.85, clip: \minmax),
+		).linlin(0, 100, 0.0, 0.8, clip: \minmax),
 
 		w_ht = ((weights.at(\ht) * 100)
 		- (density_delta / 10)
@@ -229,6 +252,14 @@ Behavior {
 		+ (percpitch_delta / 10)
 		+ (avgrolloff_delta / 10)
 		+ (avgflat_delta / 10)
+		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
+
+		w_gl = ((weights.at(\gl) * 100)
+		- (density_delta / 5)
+		+ (windowsize_delta / 5)
+		+ (avgcent_delta / 10)
+		+ (avgrolloff_delta / 10)
+		- (avgrms_delta / 10)
 		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
 
 		w_cp = ((weights.at(\cp) * 100)
@@ -254,7 +285,19 @@ Behavior {
 		).linlin(0, 100, 0, 10, clip: \minmax),
 
 		// setting target
-		calib = [w_sc, w_so, w_ma, w_te, w_an, w_hp, w_st, w_ht, w_cp, w_gp],
+		calib = [
+			w_sc,
+			w_so,
+			w_ma,
+			w_te,
+			w_ry,
+			w_an,
+			w_hp,
+			w_st,
+			w_ht,
+			w_gl,
+			w_cp,
+			w_gp],
 
 		recalib = Array.fill(
 			calib.size, {
@@ -270,12 +313,14 @@ Behavior {
 			\so -> recalib[1],
 			\ma -> recalib[2],
 			\te -> recalib[3],
-			\an -> recalib[4],
-			\hp -> recalib[5],
-			\st -> recalib[6],
-			\ht -> recalib[7],
-			\cp -> recalib[8],
-			\gp -> recalib[9]
+			\ry -> recalib[4],
+			\an -> recalib[5],
+			\hp -> recalib[6],
+			\st -> recalib[7],
+			\ht -> recalib[8],
+			\gl -> recalib[9],
+			\cp -> recalib[10],
+			\gp -> recalib[11]
 		];
 
 		means = theseMeans;
@@ -307,10 +352,12 @@ Behavior {
 				\so -> 0.1,
 				\ma -> 0.1,
 				\te -> 0.1,
+				\ry -> 0.1,
 				\an -> 0.1,
 				\hp -> 0.1,
 				\st -> 0.1,
 				\ht -> 0.1,
+				\gl -> 0.1,
 				\cp -> 0.1,
 				\gp -> 0.1
 			];

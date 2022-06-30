@@ -361,6 +361,69 @@ Handler {
 		).play
 	}
 
+	rytmPlayer { // periodic sequences corresponding to input density
+
+		|buf|
+
+		var temp = args.at(\density).linlin(0.0, 10.0, 0.1, 3.0, clip: \minmax),
+		variance = args.at(\windowsize).linlin(0.0, 3.0, 0.01, 0.1, clip: \minmax),
+		cent = args.at(\avgcent).linlin(0, 10000, 200, 16000, clip: \minmax),
+		bright = args.at(\avgrolloff).linlin(0, 12000, 0.1, 0.01, clip: \minmax),
+		velocity = args.at(\avgrms).linlin(0.0, 1.0, 1.0, 4.0, clip: \minmax),
+		noise = args.at(\avgflat).linlin(0.0, 0.1, 1, 3, clip:\minmax),
+		cutoff = rrand(200 * velocity, 800 * velocity),
+		reps = rrand(10, 35).asInteger,
+		atk = rrand(0.01, variance);
+
+		Pkill(
+
+			\instrument, \playback,
+
+			\env, 1,
+
+			\dur, Pseq([
+				temp,
+				(rrand(0.01, 0.03)!velocity * 2)
+			]),
+
+			\rate, Pwrand(
+				[1.0, 1.3, -1.0, -0.9, -0.8, 2.0],
+				[6, 1, 6, 4, 2, 1].normalizeSum,
+				reps * 2),
+
+			\atk, rrand(atk, atk + 0.1),
+
+			\rel, ~sampleSize - 0.2,
+
+			\buf, Pshuf(buf, inf),
+
+			\pan, Pwhite(
+				rrand(-1, 1),
+				(rrand(-1, 1) + 0.2)
+					.linlin(-1.0, 1.0, -1.0, 1.0, clip: \minmax),
+				inf),
+
+			\amp, 0.08,
+
+			\cutoff, cent,
+
+			\out, Pseq([
+				(~dryBus[0 % ~numPairs]!3),
+				(~reverbShortBus[rrand(0, 4) % ~numPairs]!(noise.asInteger))
+			], inf),
+
+			{
+				{
+					buf.do {
+						|b|
+						b.free;
+					}
+				}.defer(20);
+			}
+
+		).play
+	}
+
 	angelPlayer { // high-pitched, warbling, long envelope
 
 		|buf|
@@ -661,6 +724,65 @@ Handler {
 		).play
 	}
 
+	glissPlayer { // rate envelope
+
+		|buf|
+
+		var freq = args.at(\mainpitch)
+			.asString
+			.pitchcps
+			.linlin(0, 10000, 2, 0.01, clip: \mixmax),
+		resonant = args.at(\percpitch).linlin(0.0, 1.0, 2, 7, clip: \minmax),
+		bright = args.at(\avgrolloff).linlin(0, 12000, 1, 5, clip: \minmax),
+		velocity = args.at(\avgrms).linlin(0.0, 1.0, 1.0, 3.0, clip: \minmax),
+		reps = rrand(resonant * 2, resonant * 10).asInteger,
+		atk = 0.1;
+
+		Pkill(
+
+			\instrument, \playback,
+
+			\env, 1,
+
+			\dur, Pwhite(0.01, 0.1),
+
+			\atk, atk,
+
+			\rel, (~sampleSize * 2) - atk,
+
+			\rate, Env(
+				[0.80, rrand(1.0, 1.1), rrand(0.8, 1.1)],
+				[rrand(0.1, resonant), rrand(resonant, resonant * 3)],
+				\sin),
+
+			\cutoff, Env(
+				[bright * 1000, bright * 2000, bright * 500],
+				[rrand(0.1, 3), rrand(4, 19)],
+				\sin),
+
+			\buf, Pshuf(buf, inf),
+
+			\pan, Pwhite(-1 * (freq / 2), freq / 2),
+
+			\amp, Pwhite(0.01, 0.08),
+
+			\out, Pseq([
+				(~reverbShortBus[2 % ~numPairs]!(resonant.asInteger)),
+				(~reverbMidBus[rrand(0, 4) % ~numPairs]!2),
+			], reps),
+
+			{
+				{
+					buf.do {
+						|b|
+						b.free;
+					}
+				}.defer(20);
+			}
+
+		).play
+	}
+
 	clusterPlayer { // pitch stacks
 
 		|buf|
@@ -866,6 +988,10 @@ Handler {
 				this.techPlayer(buf)
 			},
 
+			\ry, {
+				this.rytmPlayer(buf)
+			},
+
 			\an, {
 				this.angelPlayer(buf)
 			},
@@ -880,6 +1006,10 @@ Handler {
 
 			\ht, {
 				this.halftimePlayer(buf)
+			},
+
+			\gl, {
+				this.glissPlayer(buf)
 			},
 
 			\cp, {

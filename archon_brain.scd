@@ -589,6 +589,34 @@ b = Button(~w, Rect(20, 20, 340, 30))
 		);
 	});
 
+b = Button(~w, Rect(20, 20, 340, 30))
+	.states_([
+		["Engage HT Override", Color.black, Color.yellow],
+	])
+	.action_({
+		|state|
+		~targetOverride = true;
+		switch(state.value,
+				0, {
+					~specTarget = \ht;
+				},
+		);
+	});
+
+b = Button(~w, Rect(20, 20, 340, 30))
+	.states_([
+		["Engage RY Override", Color.black, Color.red],
+	])
+	.action_({
+		|state|
+		~targetOverride = true;
+		switch(state.value,
+				0, {
+					~specTarget = \ry;
+				},
+		);
+	});
+
 s.record(numChannels:(~numOutputs + 1)); // optional to record output
 
 }
