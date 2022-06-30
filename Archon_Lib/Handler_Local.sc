@@ -428,6 +428,80 @@ Handler {
 		).play
 	}
 
+	hissPlayer { // high-pitched, warbling, long envelope
+
+		|buf|
+
+		var temp = args.at(\density).linlin(0.0, 5.0, 0.1, 3.0, clip: \minmax),
+		variance = args.at(\windowsize).linlin(0.0, 3.0, 0.0, 0.3, clip: \minmax),
+		cent = args.at(\avgcent).linlin(0, 10000, 16000, 200, clip: \minmax),
+		bright = args.at(\avgrolloff).linlin(0, 12000, 200, 10000, clip: \minmax),
+		velocity = args.at(\avgrms).linlin(0.0, 1.0, 1.0, 4.0, clip: \minmax),
+		noise = args.at(\avgflat).linlin(0.0, 0.1, 1, 3, clip:\minmax),
+		rate = (velocity.asInteger * 2),
+		reps = rrand(temp * 30, temp * 80).asInteger,
+		atk = (0.5 * (~sampleSize / rate));
+
+		Pkill(
+
+			\instrument, \playbackHP,
+
+			\env, 1,
+
+			\dur, Env(
+				[velocity / 10, velocity, velocity / 10],
+				[rrand(noise, noise * 3), rrand(noise * 2, noise * 4)],
+				\sin),
+
+			\rate, Pwrand(
+				[
+					Pwhite(rate - 0.3, rate),
+					Pwhite(
+						(-1 * (rate - 0.3)),
+						(-1 * rate))
+				],
+				[2, 2].normalizeSum,
+				reps),
+
+			\atk, atk,
+
+			\rel, (~sampleSize - (atk + 0.05)),
+
+			\buf, Pshuf(buf, inf),
+
+			\pan, Pwhite(
+				rrand(-1, 1),
+				(rrand(-1, 1) + 0.2)
+					.linlin(-1.0, 1.0, -1.0, 1.0, clip: \minmax),
+				reps),
+
+			\amp, Env(
+				[0, 0.1, 0],
+				[rrand(4, 10), rrand(6, 14)],
+				\sin),
+
+			\cutoff, Env(
+				[bright, bright * 2, bright],
+				[rrand(8, 12), rrand(8, 10)],
+				\sin),
+
+			\out, Pseq([
+				(~reverbLongBus[rrand(0, 4) % ~numPairs]),
+				(~reverbShortBus[rrand(0, 4) % ~numPairs]!4)
+			], inf),
+
+			{
+				{
+					buf.do {
+						|b|
+						b.free;
+					}
+				}.defer(40);
+			}
+
+		).play
+	}
+
 	stretchPlayer { // slowed down audio corresponding to spectral rolloff
 
 		|buf|
@@ -587,6 +661,73 @@ Handler {
 		).play
 	}
 
+	clusterPlayer { // pitch stacks
+
+		|buf|
+
+		var freq = args.at(\mainpitch)
+			.asString
+			.pitchcps
+			.linlin(0, 10000, 2, 0.01, clip: \mixmax),
+		resonant = args.at(\percpitch).linlin(0.0, 1.0, 7, 2, clip: \minmax),
+		bright = args.at(\avgrolloff).linlin(0, 12000, 1, 5, clip: \minmax),
+		velocity = args.at(\avgrms).linlin(0.0, 1.0, 1.0, 3.0, clip: \minmax),
+		reps = rrand(6, 35).asInteger,
+		atk = 0.1;
+
+		Pkill(
+
+			\instrument, \playback,
+
+			\env, 1,
+
+			\dur, Pwhite(0.01, 0.1),
+
+			\atk, atk,
+
+			\rel, (~sampleSize * 2) - atk,
+
+			\rate, Pseq([
+				(0.6),
+				(0.5),
+				(-0.53),
+				(0.52),
+				(-0.51),
+				(-0.5)
+			], inf),
+
+			\cutoff, Env(
+				[bright * 1000, bright * 2000, bright * 500],
+				[rrand(0.1, 10), rrand(4, 19)],
+				\sin),
+
+			\buf, Pshuf(buf, inf),
+
+			\pan, Pwhite(-1 * (freq / 2), freq / 2),
+
+			\amp, Env(
+				[0.01, 0.08, 0.03],
+				[rrand(0.1, 10), rrand(4, 19)],
+				\sin),
+
+			\out, Pseq([
+				(~dryBus[bright.asInteger % ~numPairs]!(resonant.asInteger)),
+				(~reverbShortBus[2 % ~numPairs]!(resonant.asInteger)),
+				(~reverbMidBus[rrand(0, 4) % ~numPairs]!2),
+			], reps),
+
+			{
+				{
+					buf.do {
+						|b|
+						b.free;
+					}
+				}.defer(20);
+			}
+
+		).play
+	}
+
 	granPlayer { // granular synthesis engine corresponding to input frequency
 
 
@@ -703,7 +844,7 @@ Handler {
 
 		//args.postln;
 
-		//state = \an;
+		//state = \hp;
 
 		("OK: Playing State: " + state + ".").postln;
 
@@ -729,12 +870,20 @@ Handler {
 				this.angelPlayer(buf)
 			},
 
+			\hp, {
+				this.hissPlayer(buf)
+			},
+
 			\st, {
 				this.stretchPlayer(buf)
 			},
 
 			\ht, {
 				this.halftimePlayer(buf)
+			},
+
+			\cp, {
+				this.clusterPlayer(buf)
 			},
 
 			\gp, {

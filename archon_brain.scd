@@ -32,6 +32,7 @@ If you see errors, make sure you've moved the library folder to the extensions f
 
 ~targetOverride = false;
 ~specTarget = \sc;
+~variance = 8;
 
 // server settings, don't mess with these:
 ServerOptions.devices;
@@ -329,11 +330,14 @@ s.sync;
 
 ~res = Buffer.read(s, "/Users/marek_orpheus/Desktop/ARCHON_db/B/4/2021-02-24_03-07_10evzcbq_1nckwb0l_sample7_0_500ms.wav");
 
-~dsp = Analysis.new(~fr, ~netAddr, ~detectionThreshold); // initiate Analysis module
+~dsp = Analysis.new(
+		~fr,
+		~netAddr,
+		~detectionThreshold); // initiate Analysis module
 ~voices = Array.fill(~numVoices, {
 		Handler.new; // initialize Handler module
 	});
-~behavior = Behavior.new(); // initialize Behavior module
+~behavior = Behavior.new(~netAddr); // initialize Behavior module
 
 Pdef(\pulsar, Pbind(
 			\instrument, \pulse,
@@ -491,13 +495,14 @@ OSCdef(
 	win = args[1].at(\windowsize).asFloat.linlin(0, 15, 1, 5, clip: \minmax),
 	dense = args[1].at(\density).asFloat.linlin(0, 25, 0.01, 25, clip: \minmax),
 	dur = (win * dense).linlin(0, 15, 0.01, 15, clip: \minmax);
+
 	("density: " + dense.asString).postln;
 	("windowsize: " + win.asString).postln;
 
 	Pdef(\pulsar,
 		Pbind(
 			\instrument, \pulse,
-			\dur, Pwhite((dur / 4), (dur + 8))
+			\dur, Pwhite((dur / 4), (dur + 2))
 		)
 	);
 

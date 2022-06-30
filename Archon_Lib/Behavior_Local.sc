@@ -16,17 +16,24 @@ Behavior {
 
 	target = \sc, // current playback machine
 	targets, // dictionary of available playback machines
-	means, weights, // used to store analysis results to calculate %∆
+	means, weights, // used to store analysis results to calculate
+
+	addr, // netaddr to send to python
 
 	onsetList, offsetList, centList, rolloffList, flatList, rmsList, pitchList;
 	// to keep long running totals of timing, spectral, and amplitude characteristics over time
 
 	*new {
+		|netAddr|
 
-        ^super.new.init()
+        ^super.new.init(netAddr)
 	}
 
 	init {
+
+		|netAddr|
+
+		addr = netAddr; // passing Python IP & port
 
 		onsetList = List.new();
 		offsetList = List.new();
@@ -38,7 +45,7 @@ Behavior {
 
 		eventTarget = rrand(1,10); // setting first event target randomly
 
-		targets = [\sc, \so, \ma, \te, \an, \st, \ht, \gp];
+		targets = [\sc, \so, \ma, \te, \an, \hp, \st, \ht, \cp, \gp];
 
 		means = Dictionary[
 			\density -> 1.0,
@@ -57,8 +64,10 @@ Behavior {
 			\ma -> 0,
 			\te -> 0,
 			\an -> 0,
+			\hp -> 0,
 			\st -> 0,
 			\ht -> 0,
+			\cp -> 0,
 			\gp -> 0
 		];
 
@@ -190,7 +199,15 @@ Behavior {
 		+ (avgrms_delta / 10)
 		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
 
-		w_an = ((weights.at(\te) * 100)
+		w_an = ((weights.at(\an) * 100)
+		- (density_delta / 5)
+		+ (windowsize_delta / 5)
+		+ (avgcent_delta / 10)
+		+ (avgrolloff_delta / 10)
+		- (avgrms_delta / 10)
+		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
+
+		w_hp = ((weights.at(\hp) * 100)
 		- (density_delta / 5)
 		+ (windowsize_delta / 5)
 		+ (avgcent_delta / 10)
@@ -214,14 +231,30 @@ Behavior {
 		+ (avgflat_delta / 10)
 		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
 
+		w_cp = ((weights.at(\cp) * 100)
+		- (density_delta / 5)
+		+ (windowsize_delta / 5)
+		- (percpitch_delta / 10)
+		- (avgcent_delta / 5)
+		+ (avgrms_delta / 10)
+		).linlin(0, 100, 0.0, 0.85, clip: \minmax),
+
 		w_gp = ((weights.at(\gp) * 100)
 		- (density_delta / 5)
 		+ (percpitch_delta / 10)
 		- (avgrms_delta / 10)
 		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
 
+		w_va = (50
+		+ (density_delta / 5)
+		+ (percpitch_delta / 10)
+		- (avgflat_delta / 10)
+		- (avgrolloff_delta / 10)
+		- (avgrms_delta / 10)
+		).linlin(0, 100, 0, 10, clip: \minmax),
+
 		// setting target
-		calib = [w_sc, w_so, w_ma, w_te, w_an, w_st, w_ht, w_gp],
+		calib = [w_sc, w_so, w_ma, w_te, w_an, w_hp, w_st, w_ht, w_cp, w_gp],
 
 		recalib = Array.fill(
 			calib.size, {
@@ -238,13 +271,16 @@ Behavior {
 			\ma -> recalib[2],
 			\te -> recalib[3],
 			\an -> recalib[4],
-			\st -> recalib[5],
-			\ht -> recalib[6],
-			\gp -> recalib[7]
+			\hp -> recalib[5],
+			\st -> recalib[6],
+			\ht -> recalib[7],
+			\cp -> recalib[8],
+			\gp -> recalib[9]
 		];
 
 		means = theseMeans;
 		weights = theseWeights;
+		~variance = w_va;
 
 		("weights: " + weights.asString).postln;
 		("means: " + means.asString).postln;
@@ -272,8 +308,10 @@ Behavior {
 				\ma -> 0.1,
 				\te -> 0.1,
 				\an -> 0.1,
+				\hp -> 0.1,
 				\st -> 0.1,
 				\ht -> 0.1,
+				\cp -> 0.1,
 				\gp -> 0.1
 			];
 

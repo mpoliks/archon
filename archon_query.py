@@ -5,6 +5,7 @@ import os, os.path
 import argparse
 import torch
 import pandas as pd
+import random
 
 from turtle import ycor
 from pythonosc import dispatcher, osc_server
@@ -33,29 +34,35 @@ def tensor_dict_from_dataframe(database_as_df):
 def process_input(input_dict):
     print(input_dict)
     pitch = list(input_dict.items())[0][1].get("pitch")
+    variance = list(input_dict.items())[0][1].get("variance")
     input_as_df = pd.DataFrame(input_dict).T
-    input_as_df = input_as_df.drop(labels='pitch', axis=1).drop(labels='rms', axis=1).drop(labels='flat', axis=1)
+    input_as_df = input_as_df.drop(labels='pitch', axis=1).drop(labels='rms', axis=1).drop(labels='flat', axis=1).drop(labels='variance', axis=1)
     column_list = list(input_as_df.columns)
     in_t = torch.tensor(
         input_as_df.loc[:, column_list]
         .to_numpy(dtype=np.float32))
-    return pitch, in_t
+    return pitch, variance, in_t
 
 # use pytorch to find min. minkowski distance between input and db, return 25 closest matches
 # note cuda is not enabled here yet (this is being tested on a 2015 macbook pro with only about 100 ms latency)
 def closest_node(input_dataframe, database_dataframe, database_tensors, audiodir):
-    pitch, input_tensor = process_input(input_dataframe)
+    pitch, variance, input_tensor = process_input(input_dataframe)
     if pitch not in database_dataframe: pitch = "unpitched"
     this_database_tensor = database_tensors.get(pitch)
     result = []
     dist = torch.cdist(input_tensor, this_database_tensor, p=2).flatten() 
+    variety_ = random.randint(0, 10)
+    
     for i in range(25):
-        values, indices = torch.kthvalue(dist, i + 1)
+        if variety_ > float(variance):
+            values, indices = torch.kthvalue(dist, i + 1)
+        else: values, indices = torch.kthvalue(dist, dist.size(dim=0) - (i + 1))
         result.append(
             format_result(
                 database_dataframe.get(pitch).iloc[indices.item()], 
                 pitch, 
                 audiodir))
+            
     return result
 
 # tidy up result so it matches google drive's horrible storage mandates
@@ -119,7 +126,10 @@ if __name__ == "__main__":
 
     # sets up Supercollider server and awaits OSC messages to /query
     dispatcher = dispatcher.Dispatcher()
+
     dispatcher.map("/query", osc_handler, database_dataframe, database_tensors, args.audiodb, client)
+
+
     server = osc_server.ThreadingOSCUDPServer(
         (args.ip, args.in_port), dispatcher)
     print("Serving on {}".format(server.server_address))

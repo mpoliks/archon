@@ -60,7 +60,6 @@ Analysis {
 
 	}
 
-
 	onsetFunctions { // for when a new peak is detected
 
 		lPeak = 0.25; // update current local peak to avoid jitter
@@ -119,7 +118,7 @@ Analysis {
 		flat = this.getMetric('flat'),
 		rms = this.getMetric('rms'),
 		pitch = this.getPitch(),
-		str = [ctr, cent, flat, rolloff, rms, pitch].archonJSON;
+		str = [ctr, cent, flat, rolloff, rms, pitch, ~variance].archonJSON;
 		// collect median values and pitch and format it for OSC
 
 		offsetTime = Date.getDate.rawSeconds.asString; // grab current time
