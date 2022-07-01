@@ -78,7 +78,7 @@ Handler {
 				[1.0]++
 				(2.0!(dense.asInteger))++
 				(0.5!(noise.asInteger))++
-				(1.0!(dense.asInteger * 2))++
+				(-1.0!(dense.asInteger * 2))++
 				(2.0!((dense/2).asInteger)),
 				2),
 
@@ -96,6 +96,64 @@ Handler {
 				(~reverbLongBus[rrand(0, 4) % ~numPairs]!(resonant.asInteger)),
 				(~dryBus[1 % ~numPairs]!1),
 				(~reverbMidBus[0 % ~numPairs]!(resonant.asInteger))], inf),
+
+			{
+				{
+					buf.do {
+						|b|
+						b.free;
+					}
+				}.defer(20);
+			}
+
+		).play
+	}
+
+	lushPlayer { // short flurries of events
+
+		|buf|
+
+		var dur = args.at(\windowsize).linlin(0, 5, 1, 5, clip: \minmax),
+		dense = args.at(\density).linlin(0, 5, 1, 5, clip: \minmax),
+		bright = args.at(\avgrolloff).linlin(0, 12000, 0, 5, clip: \minmax),
+		cent = args.at(\avgcent).linlin(0, 10000, 200, 13000, clip: \minmax),
+		width = args.at(\avgrms).linlin(0.0, 1.0, 0.3, 1.0, clip: \minmax),
+		resonant = args.at(\percpitch).linlin(0.0, 1.0, 1, 4, clip: \minmax),
+		noise = args.at(\avgflat).linlin(0.0, 0.1, 1, 3, clip:\minmax),
+		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax),
+		atk = 0.1;
+
+		Pkill(
+
+			\instrument, \playback,
+
+			\env, 1,
+
+			\dur, Pseq(
+				Pwhite(0.01, 0.3, Pwhite(0, 10)),
+				Pwhite(4.0, 10.4, 1),
+				Pwhite(0, 10)),
+
+			\atk, atk,
+
+			\rel, ~sampleSize - atk,
+
+			\rate, Pseq(
+				[1.0]++
+				(0.5!(noise.asInteger))++
+				(-1.0!(dense.asInteger * 2))++
+				(-0.5!((dense/2).asInteger)),
+				2),
+
+			\buf, Pshuf(buf, inf),
+
+			\cutoff, cent,
+
+			\pan, Pwhite(-1 * width, width),
+
+			\amp, Pwhite(0.02, 0.1),
+
+			\out, ~reverbLongBus[rrand(0, 4) % ~numPairs],
 
 			{
 				{
@@ -280,6 +338,71 @@ Handler {
 
 			\out, Pseq([
 				(~reverbShortBus[rrand(0, 4) % ~numPairs]!((bright + 1).asInteger)),
+				(~dryBus[rrand(0, 4) % ~numPairs]!(3))
+				], inf),
+
+			{
+				{
+					buf.do {
+						|b|
+						b.free;
+					}
+				}.defer(20);
+			}
+
+		).play
+	}
+
+	crankPlayer { // semi-periodic assemblages of events
+
+		|buf|
+
+		var dur = args.at(\density).linlin(0.0, 5.0, 0.2, 1.0, clip: \minmax),
+		variance = args.at(\windowsize).linlin(0.0, 3.0, 0.1, 0.3, clip: \minmax),
+		bright = args.at(\avgrolloff).linlin(1000, 12000, 1, 4, clip: \minmax),
+		cent = args.at(\avgcent).linlin(0, 10000, 200, 16000, clip: \minmax),
+		width = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 1.0, clip: \minmax),
+		resonant = args.at(\percpitch).linlin(0.0, 1.0, 7, 2, clip: \minmax),
+		velocity = args.at(\avgrms).linlin(0.0, 1.0, 0.0, 0.7, clip: \minmax),
+		cutoff = rrand(200 * velocity, 800 * velocity),
+		reps = rrand(10, bright * 50),
+		buffno = rrand(0, 10),
+		atk = 0.1;
+
+		Pkill(
+
+			\instrument, \playbackHP,
+
+			\env, 1,
+
+			\dur, Pwrand(
+				[(dur / 16), (dur / 64), (dur / 128), (dur /32), (dur / 8)],
+				[16, 2, 1, 2, 1].normalizeSum,
+				inf),
+
+			\rate, 1.0,
+
+			\buf, buffno,
+
+			\atk, Pwhite(0.01, ~sampleSize / 2),
+
+			\rel, Pwhite(0.01, ~sampleSize / 2),
+
+			\pan, Env(
+				[-1.0, 1.0, rrand(1.0, -1.0)],
+				[rrand(2, 10), rrand(2, 20)],
+				\sin),
+
+			\cutoff, Env(
+				[cent, cent * 2, cent / 2],
+				[rrand(2, 10), rrand(2, 40)],
+				\sin),
+
+			\amp, Pwhite(0.0, 0.8),
+
+			\out, Pseq([
+				(~reverbShortBus[rrand(0, 4) % ~numPairs]!((bright + 1).asInteger)),
+				(~reverbMidBus[rrand(0, 4) % ~numPairs]!((bright + 1).asInteger)),
 				(~dryBus[rrand(0, 4) % ~numPairs]!(3))
 				], inf),
 
@@ -850,6 +973,65 @@ Handler {
 		).play
 	}
 
+	wallPlayer { // noise stacks
+
+		|buf|
+
+		var freq = args.at(\mainpitch)
+			.asString
+			.pitchcps
+			.linlin(0, 10000, 2, 0.01, clip: \mixmax),
+		resonant = args.at(\percpitch).linlin(0.0, 1.0, 7, 2, clip: \minmax),
+		bright = args.at(\avgrolloff).linlin(0, 12000, 1, 5, clip: \minmax),
+		velocity = args.at(\avgrms).linlin(0.0, 1.0, 1.0, 3.0, clip: \minmax),
+		reps = rrand(6, 35).asInteger,
+		atk = 0.1;
+
+		Pkill(
+
+			\instrument, \playback,
+
+			\env, 1,
+
+			\dur, Pwhite(0.01, 0.1),
+
+			\atk, atk,
+
+			\rel, (~sampleSize / 2) - atk,
+
+			\rate, Pwhite(0.5, 1.5),
+
+			\cutoff, Env(
+				[bright * 1000, bright * 2000, bright * 500],
+				[rrand(0.1, 10), rrand(4, 19)],
+				\sin),
+
+			\buf, Pshuf(buf, inf),
+
+			\pan, Pwhite(-1 * (freq / 2), freq / 2),
+
+			\amp, Env(
+				[0.06, 0.08, 0.01],
+				[rrand(0.01, 20), rrand(0.01, 20)],
+				\sin),
+
+			\out, Pseq([
+				(~reverbShortBus[2 % ~numPairs]!(resonant.asInteger)),
+				(~reverbLongBus[rrand(0, 4) % ~numPairs]!2),
+			], reps),
+
+			{
+				{
+					buf.do {
+						|b|
+						b.free;
+					}
+				}.defer(20);
+			}
+
+		).play
+	}
+
 	granPlayer { // granular synthesis engine corresponding to input frequency
 
 
@@ -960,6 +1142,73 @@ Handler {
 		});
 	}
 
+
+	bubblePlayer { // granular synthesis engine corresponding to input frequency
+
+
+		|buf|
+
+		var dense = args.at(\density).linlin(0.0, 10.0, 20, 1, clip: \minmax),
+		cent = args.at(\avgcent).linlin(0, 10000, 200, 16000, clip: \minmax),
+		reps = rrand(1, 5),
+		velocity = args.at(\avgrms).linlin(0.0, 1.0, 1.0, 1.6, clip: \minmax),
+		rates = [1.0, velocity],
+		bright = args.at(\avgrolloff).linlin(500, 12000, 0, 2, clip: \minmax),
+		freq = rrand(1, dense),
+		altfreq = rrand(1, dense),
+		atk = 0.1;
+
+		Pkill(
+
+			\instrument, \playgran,
+
+			\freq, Env(
+				[freq, altfreq, freq],
+				[rrand(3, 20), rrand(3, 20)],
+				\sin),
+
+			\dur, Pwhite(1, dense, inf),
+
+			\env, 1,
+
+			\buf, Pshuf(buf, inf),
+
+			\atk, Pwhite(atk, atk * 13),
+
+			\rel, (~sampleSize * 2) - atk,
+
+			\freq, freq,
+
+			\rate, Pseq([
+				(rates[0]!reps),
+				(rates[1]!reps),
+			], rrand(3, 20)),
+
+			\cutoff, Env(
+				[cent, cent * 5, cent / 2],
+				[rrand(3, 20), rrand(3, 20)],
+				\sin),
+
+			\pan, Pwhite(-1, 1),
+
+			\amp, Pwhite(0.01, 0.08),
+
+			\out, Pseq([
+				(~reverbShortBus[rrand(0, 4) % ~numPairs]),
+			], inf),
+
+			{
+				{
+					buf.do {
+						|b|
+						b.free;
+					}
+				}.defer(60);
+			}
+
+		).play
+	}
+
 	stateMachine { // function that relays handler buffer into playback machines
 
 		|buf|
@@ -976,12 +1225,20 @@ Handler {
 				this.sciarrinoPlayer(buf)
 			},
 
+			\lu, {
+				this.lushPlayer(buf)
+			},
+
 			\so, {
 				this.sonorousPlayer(buf)
 			},
 
 			\ma, {
 				this.machinePlayer(buf)
+			},
+
+			\cr, {
+				this.crankPlayer(buf)
 			},
 
 			\te, {
@@ -1016,9 +1273,18 @@ Handler {
 				this.clusterPlayer(buf)
 			},
 
+			\wa, {
+				this.wallPlayer(buf)
+			},
+
 			\gp, {
 				this.granPlayer(buf)
-			}
+			},
+
+			\bu, {
+				this.bubblePlayer(buf)
+			},
+
 		);
 	}
 

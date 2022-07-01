@@ -47,8 +47,10 @@ Behavior {
 
 		targets = [
 			\sc,
+			\lu,
 			\so,
 			\ma,
+			\cr,
 			\te,
 			\ry,
 			\an,
@@ -57,7 +59,9 @@ Behavior {
 			\ht,
 			\gl,
 			\cp,
-			\gp
+			\wa,
+			\gp,
+			\bu
 		];
 
 		means = Dictionary[
@@ -73,8 +77,10 @@ Behavior {
 
 		weights = Dictionary[
 			\sc -> 0,
+			\lu -> 0,
 			\so -> 0,
 			\ma -> 0,
+			\cr -> 0,
 			\te -> 0,
 			\ry -> 0,
 			\an -> 0,
@@ -83,7 +89,9 @@ Behavior {
 			\ht -> 0,
 			\gl -> 0,
 			\cp -> 0,
-			\gp -> 0
+			\wa -> 0,
+			\gp -> 0,
+			\bu -> 0
 		];
 
 	}
@@ -190,6 +198,13 @@ Behavior {
 		+ (avgflat_delta / 10)
 		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
 
+		w_lu = ((weights.at(\lu) * 100)
+		- (density_delta / 5)
+		+ (windowsize_delta / 10)
+		+ (percpitch_delta / 10)
+		- (avgflat_delta / 10)
+		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
+
 		w_so = ((weights.at(\sc) * 100)
 		+ (density_delta / 10)
 		+ (windowsize_delta / 10)
@@ -204,6 +219,14 @@ Behavior {
 		+ (windowsize_delta / 10)
 		+ (avgcent_delta / 10)
 		+ (avgrolloff_delta / 10)
+		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
+
+		w_cr = ((weights.at(\cr) * 100)
+		+ (density_delta / 10)
+		+ (windowsize_delta / 10)
+		- (avgflat_delta / 10)
+		- (avgcent_delta / 10)
+		- (avgrolloff_delta / 10)
 		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
 
 		w_te = ((weights.at(\te) * 100)
@@ -270,10 +293,24 @@ Behavior {
 		+ (avgrms_delta / 10)
 		).linlin(0, 100, 0.0, 0.85, clip: \minmax),
 
+		w_wa = ((weights.at(\wa) * 100)
+		- (density_delta / 10)
+		+ (windowsize_delta / 5)
+		- (percpitch_delta / 10)
+		- (avgcent_delta / 5)
+		+ (avgrms_delta / 10)
+		).linlin(0, 100, 0.0, 0.85, clip: \minmax),
+
 		w_gp = ((weights.at(\gp) * 100)
 		- (density_delta / 5)
 		+ (percpitch_delta / 10)
 		- (avgrms_delta / 10)
+		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
+
+		w_bu = ((weights.at(\bu) * 100)
+		+ (density_delta / 5)
+		- (percpitch_delta / 10)
+		+ (avgrms_delta / 10)
 		).linlin(0, 100, 0.0, 1.0, clip: \minmax),
 
 		w_va = (50
@@ -287,8 +324,10 @@ Behavior {
 		// setting target
 		calib = [
 			w_sc,
+			w_lu,
 			w_so,
 			w_ma,
+			w_cr,
 			w_te,
 			w_ry,
 			w_an,
@@ -297,7 +336,10 @@ Behavior {
 			w_ht,
 			w_gl,
 			w_cp,
-			w_gp],
+			w_wa,
+			w_gp,
+			w_bu
+		],
 
 		recalib = Array.fill(
 			calib.size, {
@@ -310,17 +352,21 @@ Behavior {
 		// resetting current means and weights
 		theseWeights = Dictionary[
 			\sc -> recalib[0],
-			\so -> recalib[1],
-			\ma -> recalib[2],
-			\te -> recalib[3],
-			\ry -> recalib[4],
-			\an -> recalib[5],
-			\hp -> recalib[6],
-			\st -> recalib[7],
-			\ht -> recalib[8],
-			\gl -> recalib[9],
-			\cp -> recalib[10],
-			\gp -> recalib[11]
+			\lu -> recalib[1],
+			\so -> recalib[2],
+			\ma -> recalib[3],
+			\cr -> recalib[4],
+			\te -> recalib[5],
+			\ry -> recalib[6],
+			\an -> recalib[7],
+			\hp -> recalib[8],
+			\st -> recalib[9],
+			\ht -> recalib[10],
+			\gl -> recalib[11],
+			\cp -> recalib[12],
+			\wa -> recalib[13],
+			\gp -> recalib[14],
+			\bu -> recalib[15]
 		];
 
 		means = theseMeans;
@@ -349,8 +395,10 @@ Behavior {
 
 			weights = Dictionary[
 				\sc -> 0.1,
+				\lu -> 0.1,
 				\so -> 0.1,
 				\ma -> 0.1,
+				\cr -> 0.1,
 				\te -> 0.1,
 				\ry -> 0.1,
 				\an -> 0.1,
@@ -359,7 +407,9 @@ Behavior {
 				\ht -> 0.1,
 				\gl -> 0.1,
 				\cp -> 0.1,
-				\gp -> 0.1
+				\wa -> 0.1,
+				\gp -> 0.1,
+				\bu -> 0.1
 			];
 
 			~targetOverride = false;
