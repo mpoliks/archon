@@ -18,7 +18,7 @@ If you see errors, make sure you've moved the library folder to the extensions f
 ~hardwareOutputs = 16; // number of hardware outputs - right now this is configured for stereo
 ~fr = 10; // how frequently to sample input for descriptors
 ~outputChannel = 0; // remember: SuperCollider channel 0 = mixer channel 1
-~numOutputs = 8;
+~numOutputs = 2;
 ~numPairs = ~numOutputs / 2;
 
 //
@@ -170,6 +170,22 @@ SynthDef(\playgran, { // granular synth
 	sig = BPF.ar(sig, fenv);
 
 	Out.ar(out, sig * env)
+
+}).add;
+
+SynthDef(\looper, { // playback synth
+	|
+	buf,
+	amp = 1.0,
+	out|
+
+	var sig = PlayBuf.ar(
+		4,
+		buf,
+		loop: 1
+		);
+
+	Out.ar(out, sig * amp);
 
 }).add;
 
@@ -328,7 +344,7 @@ s.sync;
 ~mixGroup = Group.tail(s);
 // sets sequence for buses
 
-~res = Buffer.read(s, "/Users/marek_orpheus/Desktop/ARCHON_db/B/4/2021-02-24_03-07_10evzcbq_1nckwb0l_sample7_0_500ms.wav");
+~loop = Buffer.read(s, "/Users/marekpoliks/Desktop/stasisfield.wav");
 
 ~dsp = Analysis.new(
 		~fr,
@@ -363,6 +379,15 @@ Synth(
 		\in, ~analysisBus.index
 	], ~analysisGroup
 );
+
+/*
+~loopSynth =
+	Synth (
+	\looper, [
+		\buf, ~loop,
+		\amp, 1.0,
+		\out, ~dryBus[0]
+	]);*/
 
 ~reverbShortSynth = Array.fill(~numPairs, {
 	|i|
@@ -617,7 +642,7 @@ b = Button(~w, Rect(20, 20, 340, 30))
 		);
 	});
 
-s.record(numChannels:(~numOutputs + 1)); // optional to record output
+//s.record(numChannels:(~numOutputs + 1)); // optional to record output
 
 }
 

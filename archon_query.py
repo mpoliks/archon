@@ -65,12 +65,8 @@ def closest_node(input_dataframe, database_dataframe, database_tensors, audiodir
             
     return result
 
-# tidy up result so it matches google drive's horrible storage mandates
 def format_result(sample, pitch, target_audiodir):
     audiofile = sample.name
-    #Takeout-safe formatting only
-    if audiofile[:-6] != 'ms.wav': 
-        audiofile = audiofile[:-4] + "ms.wav"
     if (pitch != "unpitched"): 
       oct = int(pitch[-1])
       pitch = pitch.replace(str(oct), "")  
@@ -80,11 +76,11 @@ def format_result(sample, pitch, target_audiodir):
       cent = sample.get("cent")
       flat = sample.get("flat")
       rolloff = sample.get("rolloff")
-      if float(cent) > 4000.0: return_dir = return_dir + "high_cent/"
+      if float(cent) > 2000.0: return_dir = return_dir + "high_cent/"
       else: return_dir = return_dir + "low_cent/"
       if float(flat) > 0.01: return_dir = return_dir + "high_flat/"
       else: return_dir = return_dir + "low_flat/"
-      if float(rolloff) > 8000: return_dir = return_dir+ "high_rolloff/"
+      if float(rolloff) > 3200: return_dir = return_dir+ "high_rolloff/"
       else: return_dir = return_dir + "low_rollof/"  
     return return_dir + audiofile
 
@@ -107,9 +103,9 @@ if __name__ == "__main__":
     parser.add_argument("--out_port",
         type=int, default=57120, help="The port to send to")      
     parser.add_argument("--file",
-        default="/Users/marek_orpheus/Desktop/ARCHON_db/analysis_500ms.json", help="Location of analysis file (json)")
+        default=(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'ArchonDB/analysisfile.json'))), help="Location of analysis file (json)")
     parser.add_argument("--audiodb",
-        default="/Users/marek_orpheus/Desktop/ARCHON_db/", help="Location of audio database")
+        default=(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'ArchonDB')) + "/"), help="Location of audio database")
     args = parser.parse_args()
 
     # sets up Supercollider client and test message, if you don't see one in SC, start investigating
@@ -123,6 +119,8 @@ if __name__ == "__main__":
     print("OK: loading tensors...")
     database_tensors = tensor_dict_from_dataframe(database_dataframe)
     print("OK: complete!")
+
+    print(args.audiodb)
 
     # sets up Supercollider server and awaits OSC messages to /query
     dispatcher = dispatcher.Dispatcher()
