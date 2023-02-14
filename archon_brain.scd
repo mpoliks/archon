@@ -8,6 +8,19 @@ If you see errors, make sure you've moved the library folder to the extensions f
 */
 (
 
+/*
+TO RUN:
+1. Open your Terminal
+2. Run the command python3 path/to/brainfile
+3. CLICK HERE and hit CMD+ENTER;
+
+TO STOP:
+Hit CMD + .
+*/
+
+~record = true; //change to false if you do not want to record this session
+
+
 ~netAddr = NetAddr("127.0.0.1", 5005); // Python address
 ("OK: Listening on " + NetAddr.langPort.asString ++ ".").postln;
 // This is what SC is listening on, if you don't hear back from Python, make sure Python is listening on this port.
@@ -65,36 +78,23 @@ SynthDef(\pulse, {
 }).add;
 
 SynthDef(\playback, { // playback synth
-	|rate = 1,
-	atk = 0.1,
-	rel = 0.4,
-	cutoff = 500,
-	pan = 0,
-	buf,
-	rq = 4.0,
-	amp = 1.0,
-	out|
-
-	var sig = PlayBuf.ar(
-		1,
+ |rate = 1,
+ atk = 0.1,
+		rel = 0.4,
+		cutoff = 500,
+		pan = 0,
 		buf,
-		BufRateScale.ir(buf) * rate,
-		doneAction: 2),
+		rq = 4.0,
+		amp = 1.0,
+		out|
 
-	env = EnvGen.kr(
-			Env.new(
-				[0,1,0],
-				[atk, rel],
-				[1, -1]),
-			doneAction:2);
+		var sig = PlayBuf.ar(1, buf, BufRateScale.ir(buf) * rate, doneAction:2),
+		env = EnvGen.kr(Env.new([0,1,0], [atk, rel],[1, -1]), doneAction:2);
+		sig = BPF.ar(sig, cutoff);
+		sig = Pan2.ar(sig, pan, amp);
+		Out.ar(out, sig * env);
+	}).add;
 
-	sig = BPF.ar(sig, cutoff);
-
-	sig = Pan2.ar(sig, pan, amp);
-
-	Out.ar(out, sig * env);
-
-}).add;
 
 SynthDef(\playbackHP, { // playback synth
 	|rate = 1,
@@ -170,22 +170,6 @@ SynthDef(\playgran, { // granular synth
 	sig = BPF.ar(sig, fenv);
 
 	Out.ar(out, sig * env)
-
-}).add;
-
-SynthDef(\looper, { // playback synth
-	|
-	buf,
-	amp = 1.0,
-	out|
-
-	var sig = PlayBuf.ar(
-		4,
-		buf,
-		loop: 1
-		);
-
-	Out.ar(out, sig * amp);
 
 }).add;
 
@@ -344,7 +328,7 @@ s.sync;
 ~mixGroup = Group.tail(s);
 // sets sequence for buses
 
-~loop = Buffer.read(s, "/Users/marekpoliks/Desktop/stasisfield.wav");
+~res = Buffer.alloc(s, s.sampleRate * 8.0, 2);
 
 ~dsp = Analysis.new(
 		~fr,
@@ -379,15 +363,6 @@ Synth(
 		\in, ~analysisBus.index
 	], ~analysisGroup
 );
-
-/*
-~loopSynth =
-	Synth (
-	\looper, [
-		\buf, ~loop,
-		\amp, 1.0,
-		\out, ~dryBus[0]
-	]);*/
 
 ~reverbShortSynth = Array.fill(~numPairs, {
 	|i|
@@ -524,12 +499,14 @@ OSCdef(
 	("density: " + dense.asString).postln;
 	("windowsize: " + win.asString).postln;
 
+	if (~bufList.size > 3, {
+
 	Pdef(\pulsar,
 		Pbind(
 			\instrument, \pulse,
 			\dur, Pwhite((dur / 4), (dur + 2))
 		)
-	);
+	)});
 
 	4.do({
 		|c|
@@ -546,7 +523,7 @@ Pdef(\pulsar).play;
 
 Window.closeAll;
 
-s.meter (~hardwareInputs, ~numOutputs + 1);
+s.meter (~hardwareInputs, ~hardwareOutputs + 1);
 
 ~w = Window("GUI Controls", Rect(0,-100,360,200))
 	.front
@@ -560,28 +537,28 @@ s.meter (~hardwareInputs, ~numOutputs + 1);
 
 b = Button(~w, Rect(20, 20, 340, 30))
 	.states_([
-		["Engage SC Override", Color.black, Color.yellow],
+		["Engage LU Override", Color.black, Color.yellow],
 	])
 	.action_({
 		|state|
 		~targetOverride = true;
 		switch(state.value,
 				0, {
-					~specTarget = \sc;
+					~specTarget = \lu;
 				},
 		);
 	});
 
 b = Button(~w, Rect(20, 20, 340, 30))
 	.states_([
-		["Engage ST Override", Color.black, Color.red],
+		["Engage CR Override", Color.black, Color.red],
 	])
 	.action_({
 		|state|
 		~targetOverride = true;
 		switch(state.value,
 				0, {
-					~specTarget = \st;
+					~specTarget = \cr;
 				},
 		);
 	});
@@ -642,7 +619,9 @@ b = Button(~w, Rect(20, 20, 340, 30))
 		);
 	});
 
-//s.record(numChannels:(~numOutputs + 1)); // optional to record output
+if (~record == true, {
+		s.record(numChannels:(~numOutputs)); // optional to record output
+	});
 
 }
 

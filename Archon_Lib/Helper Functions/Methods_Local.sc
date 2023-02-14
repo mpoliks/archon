@@ -102,6 +102,7 @@
 		rolloff = this[3],
 		rms = this[4],
 		pitch = this[5],
+		variance = this[6],
 
 		str = ("{" ++
 			'"' ++ id.asString ++ '"' ++
@@ -120,6 +121,9 @@
 			',' ++
 			'"pitch":' ++
 			'"' ++ pitch.asString ++ '"' ++
+			',' ++
+			'"variance":' ++
+			'"' ++ variance.asString ++ '"' ++
 			'}}').asString;
 
 		^ str;
